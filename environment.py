@@ -13,7 +13,7 @@ class pSCT_environment(gym.Env):
 
     def __init__(self,
                  seed=67,
-                 resp_file="/Users/evanhilton/Desktop/VSCoding/RLAlignIndividual/pSCT_spec/P1_matrix.yml",
+                 resp_file="P1_matrix.yml",
 
                  P1s = [1111, 1112, 1113, 1114, 1211, 1212, 1213, 1214, 1311, 1312, 1313, 1314, 1411, 1412, 1413, 1414],
                  n_panels=1,
