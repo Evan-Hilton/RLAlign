@@ -5,7 +5,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout, QHBoxLayout
 )
 from PySide6.QtCore import QTimer
-from PySide6.QtGui import QPainter, QColor
+from PySide6.QtGui import QPaintEvent, QImage, QPainter, QColor
+from PyQt5.QtCore import Qt
 import pyqtgraph as pg
 from Agent import Agent
 
@@ -15,12 +16,12 @@ version = ""
 
 """
 The RLAlignModel class keeps track of all active Agents. 
-An agent is considered to exist for every P1 panel, but is not
-simulated if the the program can't find the model.
+Agents are defined in Agent.py
 """
 class RLAlignModel:
     def __init__(self, agent_array: list[Agent]):
         self.agents = agent_array # agent_array is an array of Agent which represents the agents for each panel
+        self.running = False
 
     def step(self):
         for agent in self.agents:
@@ -57,16 +58,15 @@ class MainWindow(QWidget):
         super().__init__()
 
         # set up the model to do things
-        self.model = RLAlignModel()
+        Agent1 = Agent("models/v4.0-1111", "envs/v4.0-1111", 1111)
+        self.model = RLAlignModel([Agent1])
 
-        self.setWindowTitle("RL Visualizer Template")
+        self.setWindowTitle("Mirror Panel Alignment Tool")
         self.resize(800, 600)
 
         # Widgets
         self.button = QPushButton("Start / Pause")
         self.reset_button = QPushButton("Reset")
-
-        self.drawing = DrawingWidget()
 
         self.plot = pg.PlotWidget()
         self.plot_curve = self.plot.plot()
@@ -75,7 +75,6 @@ class MainWindow(QWidget):
         layout = QVBoxLayout()
         layout.addWidget(self.button)
         layout.addWidget(self.reset_button)
-        layout.addWidget(self.drawing)
         layout.addWidget(self.plot)
         self.setLayout(layout)
 
@@ -100,18 +99,37 @@ class MainWindow(QWidget):
     def reset(self):
         self.model.reset()
         self.plot_curve.setData([])
-        self.drawing.set_position(10)
 
     # called at 60 Hz
     def update_loop(self):
-        value = self.model.step()
-
-        # Update rectangle position
-        x = 200 + 100 * value
-        self.drawing.set_position(x)
+        self.model.step()
 
         # Update graph
         self.plot_curve.setData(self.model.data)
+    
+    def paintEvent(self, event: QPaintEvent) -> None:
+        painter = QPainter(self)
+        img = self.model.agents[0].obs # this might be [0, 1)
+        img = (255 * (img - img.min()) / (img.max() - img.min())).astype(np.uint8)
+        img = np.ascontiguousarray(img)
+        h, w = img.shape
+
+        qimg = QImage(
+            img.data,
+            w,
+            h,
+            img.strides[0],
+            QImage.Format_Grayscale8
+        )
+
+        scaled = qimg.scaled(
+            128,
+            128,
+            Qt.KeepAspectRatio,
+            Qt.FastTransformation
+        )
+
+        painter.drawImage(0, 0, scaled)
 
 
 # -------------------- APP ENTRY --------------------
