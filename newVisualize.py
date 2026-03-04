@@ -7,33 +7,28 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QPainter, QColor
 import pyqtgraph as pg
-
+from Agent import Agent
 
 # -------------------- MODEL --------------------
 
 version = ""
 
-# An agent contains an environment (the one it was trained in), an RL agent,
-# and a reward function (the one collected for every time step of the simulation)
-class Agent:
-    def __init__(self):
-        self.model = 
-
+"""
+The RLAlignModel class keeps track of all active Agents. 
+An agent is considered to exist for every P1 panel, but is not
+simulated if the the program can't find the model.
+"""
 class RLAlignModel:
-    def __init__(self):
-        self.t = 0
-        self.running = False
-        self.data = []
+    def __init__(self, agent_array: list[Agent]):
+        self.agents = agent_array # agent_array is an array of Agent which represents the agents for each panel
 
     def step(self):
-        self.t += 1
-        value = np.sin(self.t * 0.1)
-        self.data.append(value)
-        return value
+        for agent in self.agents:
+            agent.step()
 
     def reset(self):
-        self.t = 0
-        self.data = []
+        for agent in self.agents:
+            agent.reset()
 
 
 # -------------------- VIEW --------------------
@@ -107,6 +102,7 @@ class MainWindow(QWidget):
         self.plot_curve.setData([])
         self.drawing.set_position(10)
 
+    # called at 60 Hz
     def update_loop(self):
         value = self.model.step()
 
