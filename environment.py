@@ -15,38 +15,29 @@ class pSCT_environment(gym.Env):
     def __init__(self,
                  n_panels = 2):
         
+        # bookkeeping
+        self.step_count = 0
+        
+        # panels
+        self.P1s = [1111, 1112, 1113, 1114, 1211, 1212, 1213, 1214, 1311, 1312, 1313, 1314, 1411, 1412, 1413, 1414],
         self.n_panels = n_panels
 
         # the pSCT telescope
         self.telescope = pSCT()
 
-        self.step_count = 0
-
-        # action / observation
-        # Observation: single-channel image
+        # Observation: single-channel image, unnormalized.
         self.observation_space = spaces.Box(
-            low=0.0,
-            high=1.0,
+            low=0,
+            high=255,
             shape=(1, self.img_size, self.img_size),  # CHW for SB3 CNN
-            dtype=np.float32,
+            dtype=np.int8,
         )
 
         # Action: (panel choice, rx, ry)
         # rx and ry are discretized to 25 unique values.
-        self.action_space = spaces.MultiDiscrete([17, 25, 25], dtype=np.int8)
-    # =================================== API ===================================
-    """
-    Please note that render() and close() are not declared. They are optionally a part of the API.
-
-    render() is not defined because the observation returned by step() and reset()
-    are inherently visual (an image). Any rendering or visualization that a user
-    might want should be done in a seperate class. (It is done in this 
-    project in visualize.py and visualizeDebug.py)
+        self.action_space = spaces.MultiDiscrete([self.n_panels, 25, 25], dtype=np.int8)
     
-    close() is not defined because there is nothing to close. close() would need
-    to be defined if we were doing any threading, using the internet, or using
-    some other data gathering that requires having a connection.
-    """
+    # =================================== API ===================================
     
     """
         -Run one timestep of the environment's dynamics using the agent actions.
@@ -67,7 +58,8 @@ class pSCT_environment(gym.Env):
         info (dict):                                                    contains debugging information
     """
     def step(self, action):
-        
+
+        self.telescope.rotate_panel(self.P1s[action[0]], )
         return observation.astype(np.float32)[None, :, :], reward, terminated, truncated, info
 
     """
