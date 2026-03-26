@@ -21,9 +21,16 @@ class pSCT_environment(gym.Env):
         # panels
         self.P1s = [1111, 1112, 1113, 1114, 1211, 1212, 1213, 1214, 1311, 1312, 1313, 1314, 1411, 1412, 1413, 1414],
         self.n_panels = n_panels
+        # discretize the action rotation into self.action_quant amount of discrete values
+        # note that action_quant should be odd so that (action_quant - 1) / 2 maps to rotation = 0
+        self.action_quant: int = 25 # if this is 25, then the agent can choose between 25 values to move the panels by. 0 and 25 represent maximum motion
 
         # the pSCT telescope
         self.telescope = pSCT()
+
+        # image information
+        self.memory_time = 2 # 2 frames of memory in the cnn
+        self.memory = None # see observation_space for dtype
 
         # Observation: single-channel image, unnormalized.
         self.observation_space = spaces.Box(
@@ -34,8 +41,9 @@ class pSCT_environment(gym.Env):
         )
 
         # Action: (panel choice, rx, ry)
+        # panel choice is a number between 0 and n_panels - 1. 
         # rx and ry are discretized to 25 unique values.
-        self.action_space = spaces.MultiDiscrete([self.n_panels, 25, 25], dtype=np.int8)
+        self.action_space = spaces.MultiDiscrete([self.n_panels, self.action_quant, self.action_quant], dtype=np.int8)
     
     # =================================== API ===================================
     
@@ -58,8 +66,17 @@ class pSCT_environment(gym.Env):
         info (dict):                                                    contains debugging information
     """
     def step(self, action):
+        # normalize actions given by the network. map [0, action_quant] -> [-1, 1]
+        rotation_x = action[1] - ((self.action_quant - 1) / 2) # action even around zero
+        rotation_x = rotation_x * 1.0 / ((self.action_quant - 1) / 2) # action scaled between -1 and 1
+        rotation_y = action[2] - ((self.action_quant - 1) / 2) # action even around zero
+        rotation_y = rotation_y * 1.0 / ((self.action_quant - 1) / 2) # action scaled between -1 and 1
 
-        self.telescope.rotate_panel(self.P1s[action[0]], )
+        # rotate the panel
+        self.telescope.rotate_panel(self.P1s[action[0]], rotation_x, rotation_y)
+
+
+
         return observation.astype(np.float32)[None, :, :], reward, terminated, truncated, info
 
     """

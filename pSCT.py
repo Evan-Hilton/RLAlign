@@ -28,16 +28,17 @@ class pSCT:
         pass
 
     """
-        Rotate the panel specified by 'panel_id' by 'rotation' amount.
+        Rotate the panel specified by 'panel_id' by rx and ry
         panel_id: integer representation of the panel's id. ex: 1121
-        rotation: the amount to rotate the panel by. must have shape (1, 2).
-                  rotation is normalized between [-1, 1]. A value of 1 means
+        rotation: the amount to rotate the panel by. rotation_x in one 
+                  direction, rotation_y in another orthogonal direction.
+                  rotations should be normalized between [-1, 1]. A value of 1 means
                   move the panel as much as it should be allowed to in that 
                   direction.
 
         Throws: ValueError: shape mismatch if rotation is not (1, 2)
     """
-    def rotate_panel(self, panel_id: int, rotation: np.ndarray):
+    def rotate_panel(self, panel_id: int, rotation_x, rotation_y):
         pass
 
     """
