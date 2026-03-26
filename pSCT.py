@@ -14,11 +14,10 @@ class pSCT:
 
     """
         Returns the image currently seen by the pSCT camera of an on-axis star.
-        If normalized is True, the image returned is in the range of [-1, 1],
-        Otherwise, the image returned is in the range of [0, 255].
-        The returned value is a numpy array with shape (img_size, img_size).
+        The returned image is bound in the usual range: [0, 255].
+        The returned image is a numpy array with shape (img_size, img_size).
     """
-    def get_image(self, normalized: bool = True):
+    def get_image(self):
         pass
 
     """
@@ -32,6 +31,9 @@ class pSCT:
         Rotate the panel specified by 'panel_id' by 'rotation' amount.
         panel_id: integer representation of the panel's id. ex: 1121
         rotation: the amount to rotate the panel by. must have shape (1, 2).
+                  rotation is normalized between [-1, 1]. A value of 1 means
+                  move the panel as much as it should be allowed to in that 
+                  direction.
 
         Throws: ValueError: shape mismatch if rotation is not (1, 2)
     """

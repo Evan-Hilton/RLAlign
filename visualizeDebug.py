@@ -1,7 +1,7 @@
 import pygame
 import numpy as np
 from stable_baselines3 import PPO
-from environment import pSCT_environment
+from environment_old import pSCT_environment
 pygame.init()
 
 # ------------------------------------------------ necessary game settings ------------------------------------------------------

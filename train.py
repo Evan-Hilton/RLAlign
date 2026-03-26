@@ -4,7 +4,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize
 from stable_baselines3.common.env_checker import check_env
-from environment import pSCT_environment
+from environment_old import pSCT_environment
 
 
 # Check that the model parameters are defined correctly in accordance with Stable_Baselines

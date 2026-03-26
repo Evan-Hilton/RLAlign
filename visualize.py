@@ -1,7 +1,7 @@
 import pygame
 import numpy as np
 from stable_baselines3 import PPO
-from environment import pSCT_environment
+from environment_old import pSCT_environment
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize
 pygame.init()
