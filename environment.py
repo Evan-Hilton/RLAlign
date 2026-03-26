@@ -17,12 +17,13 @@ class pSCT_environment(gym.Env):
         
         # bookkeeping
         self.step_count = 0
+        self.max_steps = 512 # the maximum amount of time the agent is allowed to move for
         
         # panels
         self.P1s = [1111, 1112, 1113, 1114, 1211, 1212, 1213, 1214, 1311, 1312, 1313, 1314, 1411, 1412, 1413, 1414],
         self.n_panels = n_panels
-        # discretize the action rotation into self.action_quant amount of discrete values
-        # note that action_quant should be odd so that (action_quant - 1) / 2 maps to rotation = 0
+        # discretize the action rotations into self.action_quant amount of discrete values
+        # note that action_quant should be odd so that (action_quant - 1) / 2 maps to rotation = 0 (allow the agent to not move a panel)
         self.action_quant: int = 25 # if this is 25, then the agent can choose between 25 values to move the panels by. 0 and 25 represent maximum motion
 
         # the pSCT telescope
@@ -75,7 +76,7 @@ class pSCT_environment(gym.Env):
         # rotate the panel
         self.telescope.rotate_panel(self.P1s[action[0]], rotation_x, rotation_y)
 
-
+        truncated = self.step_count >= self.max_steps
 
         return observation.astype(np.float32)[None, :, :], reward, terminated, truncated, info
 
