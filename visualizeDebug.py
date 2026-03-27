@@ -1,13 +1,12 @@
 import pygame
 import numpy as np
-from stable_baselines3 import PPO
-from environment_old import pSCT_environment
+from environment import pSCT_environment
 pygame.init()
 
 # ------------------------------------------------ necessary game settings ------------------------------------------------------
 
 game_name = "pSCT sim debugger" # the name of the window that pops up
-WIDTH = 1352-384-50 # pixels
+WIDTH = 1352-50 # pixels
 HEIGHT = 484 # pixels
 FRAME = 0
 FRAME_RATE = 60 # frames / second
@@ -15,24 +14,25 @@ background_color = (0, 0, 0) # rgb color; each value ranges from 0-225 inclusive
 
 # ----------------------------------------------------- variables ---------------------------------------------------------------
 
-# Load environment (must match training env)
 env = pSCT_environment()
 obs, _ = env.reset()
-obs = np.squeeze(obs)
-det = env._detected_fp_coords(obs)
 
 # ----------------------------------------------------- game logic --------------------------------------------------------------
 
-img_size = env.img_size # number of pixels wide
+img_size = env.telescope.img_size # number of pixels wide
 pix_size = 3 # how many pixels wide each pixel in the observation is rendered as
 buffer = 50
 show_center = True
+action = np.zeros(3, dtype=np.uint8)
+det = []
 
-# any external variable used should be declared global at the start of the function
-def main_loop(FRAME): # the current frame number is passed to the main loop if you so choose to use it
-    global obs, det
-    obs = np.squeeze(env._render_image())
-    det = env._detected_fp_coords(obs)
+def main_loop(FRAME):
+    global obs, det, action, rew
+    observation, reward, _, _, det_dict = env.step(action)
+    #print(observation.min())
+    obs = observation[0]
+    rew = reward
+    det = det_dict["detected"]
 
 def paint_loop(screen):
     global play, obs, det
@@ -41,25 +41,24 @@ def paint_loop(screen):
     pygame.draw.rect(screen, (255, 255, 255), (buffer - 1, buffer - 1, pix_size * img_size + 2, pix_size * img_size + 2), width = 2) # bounding box of image
     for r in range(img_size):
         for c in range(img_size):
-            col = 255 * obs[r][c]
+            col = obs[r][c]
+            #print(col)
             pygame.draw.rect(screen, (col, col, col), (c * pix_size + buffer, r * pix_size + buffer, pix_size, pix_size)) # image
     
     # detected
     pygame.draw.rect(screen, (255, 255, 255), (buffer + pix_size * img_size + buffer - 1, buffer - 1, pix_size * img_size + 2, pix_size * img_size + 2), width = 2) # bounding box of detected
     for (fx, fy) in (det):
-        u, v = env._fp_to_uv(fx, fy)
+        u, v = env.telescope._fp_to_uv(fx, fy)
         x, y = u * pix_size + (buffer + pix_size * img_size + buffer), v * pix_size + buffer
         pygame.draw.rect(screen, (255, 255, 255), (x, y, pix_size, pix_size), width = 2) # bounding box of detected
     
     # center
     if show_center:
-        centerx, centery = env._fp_to_uv(env.center[0], env.center[1])
+        centerx, centery = env.telescope._fp_to_uv(env.telescope.center[0], env.telescope.center[1])
         xi, yi = centerx * pix_size + buffer, centery * pix_size + buffer
         xd, yd = centerx * pix_size + (buffer + pix_size * img_size + buffer), centery * pix_size + buffer
         pygame.draw.rect(screen, (100, 235, 50), (xi, yi, pix_size, pix_size), width = 2) # center of the image
         pygame.draw.rect(screen, (100, 235, 50), (xd, yd, pix_size, pix_size), width = 2) # center of the detected plane
-    
-    # reward
     
 
 def input_loop(keys, mouse, mouse_pos):
@@ -67,11 +66,11 @@ def input_loop(keys, mouse, mouse_pos):
     if mouse[0]:
         x = (mouse_pos[0] - 50) / pix_size
         y = (mouse_pos[1] - 50) / pix_size
-        fx, fy = env._uv_to_fp(x, y)
-        diff = env.true_centroids - np.array([fx, fy])
+        fx, fy = env.telescope._uv_to_fp(x, y)
+        diff = env.telescope.true_centroids - np.array([fx, fy])
         dists = np.sum(diff**2, axis=1)
         ind = np.argmin(dists)
-        env.true_centroids[ind] = [fx, fy]
+        env.telescope.true_centroids[ind] = [fx, fy]
 
 
 # -------------------------------------------------- background functionality -------------------------------------------------
