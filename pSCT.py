@@ -33,7 +33,7 @@ class pSCT:
 
         # centroid locations
         self.base_offsets = None
-        self.true_centroids = None
+        self.true_centroids = None # (n_panels, 2)
         self.rx_ry = None
 
         # rotation information
@@ -130,13 +130,6 @@ class pSCT:
         return img
 
     """
-        Retrieves the true focal plane coordinates of each centroid for 
-        this telescope.
-    """
-    def get_true_centroids(self):
-        return self.true_centroids
-
-    """
         Rotate the panel specified by 'panel_id' by rx and ry
         panel_id: integer representation of the panel's id. ex: 1121
         rotation: the amount to rotate the panel by. rotation_x in one 
@@ -229,6 +222,9 @@ class pSCT:
         the center of the detected image.
 
         Returns: true if all the detected centroids are at the center of the screen, false otherwise
+
+        NOTE: this method uses the true centroids. true centroid locations are not accessible
+        on a real telescope, so use this method with caution
     """
     def all_centroids_at_center(self, centroid_locations=None, success_radius=3.5):
         # if no location is given, use the true location
@@ -251,3 +247,11 @@ class pSCT:
         with open(respfile) as f:
             respM_yaml = yaml.safe_load(f)
         return respM_yaml
+    
+    """
+        Returns the normalized true_centroids values. The values are normalized
+        between -1 and 1, where the top left of the detector screen has a value of
+        (-1, -1) and the bottom right of the detector screen has a value (1, 1)
+    """
+    def get_normalized_centroid_fp_coords_to_screen(self):
+        normalized_centroids = self.true_centroids

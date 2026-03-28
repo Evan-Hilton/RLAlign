@@ -27,6 +27,7 @@ action = np.asarray([0, 12, 12], dtype=np.uint8)
 det = []
 controlling = 0
 switch = False
+rew = 0
 
 def main_loop(FRAME):
     global obs, det, action, rew
@@ -41,7 +42,7 @@ def main_loop(FRAME):
     #print(env.telescope._fp_to_uv(c[0], c[1]))
 
 def paint_loop(screen):
-    global play, obs, det
+    global play, obs, det, rew
 
     font = pygame.font.SysFont('Times New Roman', 18)
     text = "image"
@@ -77,6 +78,9 @@ def paint_loop(screen):
     text = "'R' to reset game"
     text_surface = font.render(text, True, (255, 255, 255))
     screen.blit(text_surface, (400 + buffer + img_size * pix_size + buffer + img_size * pix_size / 2 - font.size(text)[0] / 2, 35 + buffer / 2))
+    text = f"Current score: {round(rew)}"
+    text_surface = font.render(text, True, (255, 255, 255))
+    screen.blit(text_surface, (400 + buffer + img_size * pix_size + buffer + img_size * pix_size / 2 - font.size(text)[0] / 2, 35+18 + buffer / 2))
     
     
     # center

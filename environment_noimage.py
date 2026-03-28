@@ -42,16 +42,18 @@ class pSCT_environment(gym.Env):
 
         # image information
         self.memory_time = memory_time # m frames of memory in the observation
-        self.memory = None # see observation_space for dtype
+        self.memory = None # np array with shape: (2 * self.n_panels, self.memory_time)
 
         # Observation: each true centroid location given by (x1, y1, x2, y2, ..., xn, yn). this is stacked
         # for each time step in the past that the agent has access to (see memory_time). this vector is then
         # flattened to provide a single array to pass as the observation.
+        #
+        # -1 is the far left of the screen, 1 is the far right of the screen
         self.observation_space = spaces.Box(
-            low=0,
-            high=255,
-            shape=(self.memory_time, self.telescope.img_size, self.telescope.img_size),  # CHW for SB3 CNN
-            dtype=np.uint8,
+            low=-1,
+            high=1,
+            shape=(self.n_panels * 2 * self.memory_time),
+            dtype=np.float32,
         )
 
         # Action: (panel choice, rx, ry)
@@ -90,11 +92,11 @@ class pSCT_environment(gym.Env):
         self.telescope.rotate_panel(self.P1s[action[0]], rotation_x, rotation_y)
 
         # update memory - give the new observation to the memory
-        self.increment_memory(self.telescope.get_image(self.P1s[:self.n_panels]))
+        single_step_obs = self.telescope.get_normalized_centroid_fp_coords_to_screen()
+        self.increment_memory(single_step_obs)
 
         # calculate reward and reward shaping
-        detected_centroids = image_analyzer.get_centroid_locations(self.memory[0])
-        cost = self.cost_from_detected_centroids(detected_centroids)
+        cost = self.cost_from_detected_centroids(self.telescope.true_centroids)
         reward = -cost
         improve = self.prev_cost - cost
         reward += 0.5 * improve
@@ -112,9 +114,9 @@ class pSCT_environment(gym.Env):
         # bookkeeping
         truncated = self.step_count >= self.max_steps
         self.step_count += 1
-        info = {"detected": detected_centroids}
+        info = {}
 
-        return self.memory, reward, terminated, truncated, info
+        return self.memory.flatten(), reward, terminated, truncated, info
 
     """
         Resets the environment to an initial internal state, returning an initial observation and info.
