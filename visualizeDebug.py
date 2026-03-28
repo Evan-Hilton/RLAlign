@@ -74,7 +74,10 @@ def paint_loop(screen):
     text = "Space to change selected centroid"
     text_surface = font.render(text, True, (255, 255, 255))
     screen.blit(text_surface, (400 + buffer + img_size * pix_size + buffer + img_size * pix_size / 2 - font.size(text)[0] / 2, 18 + buffer / 2))
-
+    text = "'R' to reset game"
+    text_surface = font.render(text, True, (255, 255, 255))
+    screen.blit(text_surface, (400 + buffer + img_size * pix_size + buffer + img_size * pix_size / 2 - font.size(text)[0] / 2, 35 + buffer / 2))
+    
     
     # center
     if show_center:
@@ -116,6 +119,9 @@ def input_loop(keys, mouse, mouse_pos):
         switch = True
     else:
         switch = False
+    
+    if keys[pygame.K_r]:
+        env.reset()
 
     action = np.asarray([controlling, horz, vert],dtype=np.uint8)
 
