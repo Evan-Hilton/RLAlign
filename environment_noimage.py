@@ -22,7 +22,7 @@ class pSCT_environment(gym.Env):
 
     def __init__(self,
                  n_panels = 2,
-                 memory_time = 1 # how many steps backward in time the agent can see
+                 memory_time = 2 # how many steps backward in time the agent can see
                  ):
         
         # bookkeeping
@@ -52,7 +52,7 @@ class pSCT_environment(gym.Env):
         self.observation_space = spaces.Box(
             low=-1,
             high=1,
-            shape=(self.n_panels * 2 * self.memory_time),
+            shape=(self.n_panels * 2 * self.memory_time,),
             dtype=np.float32,
         )
 
@@ -137,7 +137,7 @@ class pSCT_environment(gym.Env):
 
         # set up the observation
         self.memory = np.zeros((2 * self.n_panels, self.memory_time), dtype=np.uint8)
-        self.memory[:] = self.telescope.true_centroids.flatten()
+        self.memory[:] = self.telescope.true_centroids.reshape(-1)
 
         # set up reward shaping
         self.prev_cost = self.cost_from_detected_centroids(self.telescope.true_centroids)
