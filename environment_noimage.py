@@ -10,12 +10,20 @@ from image_analyzer import image_analyzer
     This class represents how the agent interacts with the pSCT.
     This class should be used as the environment class for training 
     an agent to align the pSCT mirrors.
+
+    This class uses a simplified version of the pSCT that does not
+    have mirrors but insead interacts directly with the true position
+    of the centroids. This is done mainly to prove that the method will
+    work for the image version of the pSCT and to drastically increase
+    training efficiency, since there is a large bottleneck when creating
+    images.
 """
 class pSCT_environment(gym.Env):
 
     def __init__(self,
                  n_panels = 2,
-                 memory_time = 1):
+                 memory_time = 1 # how many steps backward in time the agent can see
+                 ):
         
         # bookkeeping
         self.step_count = 0
@@ -33,10 +41,12 @@ class pSCT_environment(gym.Env):
         self.telescope = pSCT(n_panels=self.n_panels)
 
         # image information
-        self.memory_time = memory_time # n frames of memory in the cnn
+        self.memory_time = memory_time # m frames of memory in the observation
         self.memory = None # see observation_space for dtype
 
-        # Observation: single-channel image, unnormalized.
+        # Observation: each true centroid location given by (x1, y1, x2, y2, ..., xn, yn). this is stacked
+        # for each time step in the past that the agent has access to (see memory_time). this vector is then
+        # flattened to provide a single array to pass as the observation.
         self.observation_space = spaces.Box(
             low=0,
             high=255,

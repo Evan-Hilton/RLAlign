@@ -152,6 +152,7 @@ class pSCT:
         rotation_y *= self.action_scale
 
         self.rx_ry[self.P1s.index(panel_id)] += [rotation_x, rotation_y]
+        self._compute_true_centroids()
 
     """
         Randomly misaligns every panel in the telescope

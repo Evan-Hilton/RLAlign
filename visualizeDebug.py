@@ -14,7 +14,7 @@ background_color = (0, 0, 0) # rgb color; each value ranges from 0-225 inclusive
 
 # ----------------------------------------------------- variables ---------------------------------------------------------------
 
-env = pSCT_environment()
+env = pSCT_environment(n_panels=8)
 obs, _ = env.reset()
 
 # ----------------------------------------------------- game logic --------------------------------------------------------------
@@ -23,16 +23,22 @@ img_size = env.telescope.img_size # number of pixels wide
 pix_size = 3 # how many pixels wide each pixel in the observation is rendered as
 buffer = 50
 show_center = True
-action = np.zeros(3, dtype=np.uint8)
+action = np.asarray([0, 12, 12], dtype=np.uint8)
 det = []
+controlling = 0
+switch = False
 
 def main_loop(FRAME):
     global obs, det, action, rew
+    #print(action)
     observation, reward, _, _, det_dict = env.step(action)
     #print(observation.min())
     obs = observation[0]
     rew = reward
     det = det_dict["detected"]
+    c = env.telescope.true_centroids[0]
+    #print(action)
+    #print(env.telescope._fp_to_uv(c[0], c[1]))
 
 def paint_loop(screen):
     global play, obs, det
@@ -62,7 +68,7 @@ def paint_loop(screen):
     
 
 def input_loop(keys, mouse, mouse_pos):
-    global play, obs
+    global play, obs, action, up, switch, controlling
     if mouse[0]:
         x = (mouse_pos[0] - 50) / pix_size
         y = (mouse_pos[1] - 50) / pix_size
@@ -71,6 +77,29 @@ def input_loop(keys, mouse, mouse_pos):
         dists = np.sum(diff**2, axis=1)
         ind = np.argmin(dists)
         env.telescope.true_centroids[ind] = [fx, fy]
+    
+    vert = 12
+    if keys[pygame.K_UP]:# and not up:
+        vert += 12
+    if keys[pygame.K_DOWN]:# and not up:
+        vert -= 12
+
+    horz = 12
+    if keys[pygame.K_RIGHT]:# and not up:
+        horz += 12
+    if keys[pygame.K_LEFT]:# and not up:
+        horz -= 12
+
+
+    if keys[pygame.K_SPACE] and not switch:
+        controlling = (controlling + 1) % env.n_panels
+    
+    if keys[pygame.K_SPACE]:
+        switch = True
+    else:
+        switch = False
+
+    action = np.asarray([controlling, horz, vert],dtype=np.uint8)
 
 
 # -------------------------------------------------- background functionality -------------------------------------------------
