@@ -43,6 +43,11 @@ def main_loop(FRAME):
 def paint_loop(screen):
     global play, obs, det
 
+    font = pygame.font.SysFont('Times New Roman', 18)
+    text = "image"
+    text_surface = font.render(text, True, (255, 255, 255))
+    screen.blit(text_surface, (buffer + img_size * pix_size / 2 - font.size(text)[0] / 2, buffer / 2))
+
     # image
     pygame.draw.rect(screen, (255, 255, 255), (buffer - 1, buffer - 1, pix_size * img_size + 2, pix_size * img_size + 2), width = 2) # bounding box of image
     for r in range(img_size):
@@ -50,6 +55,10 @@ def paint_loop(screen):
             col = obs[r][c]
             #print(col)
             pygame.draw.rect(screen, (col, col, col), (c * pix_size + buffer, r * pix_size + buffer, pix_size, pix_size)) # image
+
+    text = "detected centroids"
+    text_surface = font.render(text, True, (255, 255, 255))
+    screen.blit(text_surface, (buffer + img_size * pix_size + buffer + img_size * pix_size / 2 - font.size(text)[0] / 2, buffer / 2))
     
     # detected
     pygame.draw.rect(screen, (255, 255, 255), (buffer + pix_size * img_size + buffer - 1, buffer - 1, pix_size * img_size + 2, pix_size * img_size + 2), width = 2) # bounding box of detected
@@ -57,6 +66,15 @@ def paint_loop(screen):
         u, v = env.telescope._fp_to_uv(fx, fy)
         x, y = u * pix_size + (buffer + pix_size * img_size + buffer), v * pix_size + buffer
         pygame.draw.rect(screen, (255, 255, 255), (x, y, pix_size, pix_size), width = 2) # bounding box of detected
+    
+
+    text = "Arrow Keys to move selected centroid"
+    text_surface = font.render(text, True, (255, 255, 255))
+    screen.blit(text_surface, (400 + buffer + img_size * pix_size + buffer + img_size * pix_size / 2 - font.size(text)[0] / 2, buffer / 2))
+    text = "Space to change selected centroid"
+    text_surface = font.render(text, True, (255, 255, 255))
+    screen.blit(text_surface, (400 + buffer + img_size * pix_size + buffer + img_size * pix_size / 2 - font.size(text)[0] / 2, 18 + buffer / 2))
+
     
     # center
     if show_center:
