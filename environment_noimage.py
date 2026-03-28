@@ -22,7 +22,7 @@ class pSCT_environment(gym.Env):
 
     def __init__(self,
                  n_panels = 2,
-                 memory_time = 2 # how many steps backward in time the agent can see
+                 memory_time = 3 # how many steps backward in time the agent can see
                  ):
         
         # bookkeeping
@@ -91,8 +91,8 @@ class pSCT_environment(gym.Env):
         # rotate the panel
         self.telescope.rotate_panel(self.P1s[action[0]], rotation_x, rotation_y)
 
-        # update memory - give the new observation to the memory
-        single_step_obs = self.telescope.get_normalized_centroid_fp_coords_on_screen().flatten()
+        # update memory - give the new observation to the memory. see self.observation_space to see why we do this
+        single_step_obs = self.telescope.get_normalized_centroid_fp_coords_on_screen().reshape(-1)
         self.increment_memory(single_step_obs)
 
         # calculate reward and reward shaping
@@ -136,13 +136,14 @@ class pSCT_environment(gym.Env):
         self.telescope.set_random_rotations()
 
         # set up the observation
-        self.memory = np.zeros((2 * self.n_panels, self.memory_time), dtype=np.uint8)
-        self.memory[:] = self.telescope.true_centroids.reshape(-1)
+        self.memory = np.zeros((2*self.n_panels, self.memory_time), dtype=np.float32)
+        single_step_obs = self.telescope.get_normalized_centroid_fp_coords_on_screen().reshape(-1) # get flattened normalized true centroid locations
+        self.memory[:] = single_step_obs[:, None]
 
         # set up reward shaping
         self.prev_cost = self.cost_from_detected_centroids(self.telescope.true_centroids)
 
-        return self.memory.flatten(), {}
+        return self.memory.flatten(order='F'), {}
     
     # ============================== Helper Functions ==============================
 
@@ -155,4 +156,6 @@ class pSCT_environment(gym.Env):
 
     def increment_memory(self, img):
         self.memory[1:] = self.memory[:-1] # shift all frames forward (ignoring first fram and overriding last frame)
+        print(img.shape)
+        print(self.memory.shape)
         self.memory[0] = img
