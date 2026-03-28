@@ -92,7 +92,7 @@ class pSCT_environment(gym.Env):
         self.telescope.rotate_panel(self.P1s[action[0]], rotation_x, rotation_y)
 
         # update memory - give the new observation to the memory
-        single_step_obs = self.telescope.get_normalized_centroid_fp_coords_to_screen()
+        single_step_obs = self.telescope.get_normalized_centroid_fp_coords_on_screen().flatten()
         self.increment_memory(single_step_obs)
 
         # calculate reward and reward shaping
@@ -136,15 +136,13 @@ class pSCT_environment(gym.Env):
         self.telescope.set_random_rotations()
 
         # set up the observation
-        img = self.telescope.get_image(self.P1s[:self.n_panels])
-        self.memory = np.zeros((self.memory_time, self.telescope.img_size, self.telescope.img_size), dtype=np.uint8)
-        self.memory[:] = img
+        self.memory = np.zeros((2 * self.n_panels, self.memory_time), dtype=np.uint8)
+        self.memory[:] = self.telescope.true_centroids.flatten()
 
         # set up reward shaping
-        detected_centroids = image_analyzer.get_centroid_locations(self.memory[0])
-        self.prev_cost = self.cost_from_detected_centroids(detected_centroids)
+        self.prev_cost = self.cost_from_detected_centroids(self.telescope.true_centroids)
 
-        return self.memory, {}
+        return self.memory.flatten(), {}
     
     # ============================== Helper Functions ==============================
 

@@ -253,5 +253,14 @@ class pSCT:
         between -1 and 1, where the top left of the detector screen has a value of
         (-1, -1) and the bottom right of the detector screen has a value (1, 1)
     """
-    def get_normalized_centroid_fp_coords_to_screen(self):
-        normalized_centroids = self.true_centroids
+    def get_normalized_centroid_fp_coords_on_screen(self):
+        # get screen coordinates of the corners of the screen
+        left_of_screen, top_of_screen = self._uv_to_fp(0, 0)
+        right_of_screen, bottom_of_screen = self._uv_to_fp(self.img_size, self.img_size)
+
+        # normalize the true centroids to be between the values found above
+        normalized_centroids = np.empty_like(self.true_centroids, dtype=np.float32)
+        normalized_centroids[:, 0] = 2 * (self.true_centroids[:, 0] - left_of_screen) / (right_of_screen - left_of_screen) - 1
+        normalized_centroids[:, 1] = 2 * (self.true_centroids[:, 1] - top_of_screen) / (bottom_of_screen - top_of_screen) - 1
+
+        return normalized_centroids

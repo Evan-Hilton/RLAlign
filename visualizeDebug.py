@@ -14,7 +14,7 @@ background_color = (0, 0, 0) # rgb color; each value ranges from 0-225 inclusive
 
 # ----------------------------------------------------- variables ---------------------------------------------------------------
 
-env = pSCT_environment(n_panels=8)
+env = pSCT_environment(n_panels=1)
 obs, _ = env.reset()
 
 # ----------------------------------------------------- game logic --------------------------------------------------------------
