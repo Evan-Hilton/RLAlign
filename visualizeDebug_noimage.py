@@ -14,7 +14,7 @@ background_color = (0, 0, 0) # rgb color; each value ranges from 0-225 inclusive
 
 # ----------------------------------------------------- variables ---------------------------------------------------------------
 
-env = pSCT_environment(n_panels=8)
+env = pSCT_environment(n_panels=2)
 obs, _ = env.reset()
 
 # ----------------------------------------------------- game logic --------------------------------------------------------------
@@ -37,8 +37,8 @@ def main_loop(FRAME):
     rew = reward
     #det = det_dict["detected"]
     c = env.telescope.true_centroids[0]
-    print(terminated)
     #print(env.telescope._fp_to_uv(c[0], c[1]))
+    print(env.telescope.all_centroids_at_center())
 
 def paint_loop(screen):
     global play, obs, rew

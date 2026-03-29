@@ -4,7 +4,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize
 from stable_baselines3.common.env_checker import check_env
-from environment import pSCT_environment
+from environment_noimage import pSCT_environment
 
 
 # Check that the model parameters are defined correctly in accordance with Stable_Baselines
@@ -45,7 +45,7 @@ if __name__ == "__main__":
         learning_rate=1e-4,
         n_steps=1024,
         batch_size=64,
-        n_epochs=5,
+        n_epochs=10,
         gamma=0.99,
         gae_lambda=0.95,
         clip_range=0.1,
@@ -57,9 +57,9 @@ if __name__ == "__main__":
         tensorboard_log="./ppo_logs/",
     )
 
-    version = "v6.0"
+    version = "v6.2"
 
-    model.learn(total_timesteps=250_000)
-    model.save("envs/" + version)
-    env.save("models/" + version)
+    model.learn(total_timesteps=200_000)
+    model.save("models/" + version)
+    env.save("envs/" + version)
     env.close()

@@ -1,14 +1,14 @@
 import pygame
 import numpy as np
 from stable_baselines3 import PPO
-from environment_old import pSCT_environment
+from environment_noimage import pSCT_environment
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize
 pygame.init()
 
 # ------------------------------------------------ necessary game settings ------------------------------------------------------
 
-game_name = "pSCT alignment model visualizer" # the name of the window that pops up
+game_name = "pSCT alignment noimage visualizer" # the name of the window that pops up
 WIDTH = 1352 # pixels
 HEIGHT = 484 + 50 # pixels
 FRAME = 0
@@ -18,26 +18,24 @@ background_color = (0, 0, 0) # rgb color; each value ranges from 0-225 inclusive
 # ----------------------------------------------------- variables ---------------------------------------------------------------
 
 # Load environment (must match training env)
-version = "3.6"
+version = "v6.0"
 env = make_vec_env(
         pSCT_environment,
         n_envs=1
         #vec_env_cls=SubprocVecEnv, # recommended in the documentation for speeding up training
     )
-env = VecNormalize.load("/Users/evanhilton/Desktop/VSCoding/RLAlignIndividual/envs/ppo_mirrorENV_v" + version, env)
+env = VecNormalize.load("envs/" + version, env)
 env.training = False
 env.norm_reward = False
-env1 = env.envs[0]
-base_env = env.envs[0].unwrapped
 
 # Load trained model
-model = PPO.load("/Users/evanhilton/Desktop/VSCoding/RLAlignIndividual/models/ppo_mirror_v" + version)
+model = PPO.load("models/" + version)
 
-obs, _ = env1.reset()
+obs = env.reset()
 
 # ----------------------------------------------------- game logic --------------------------------------------------------------
 
-img_size = base_env.img_size # number of pixels wide
+img_size = 128 # number of pixels wide
 pix_size = 3 # how many pixels wide each pixel in the observation is rendered as
 buffer = 50
 play = False
@@ -49,37 +47,36 @@ def main_loop(FRAME): # the current frame number is passed to the main loop if y
     global play, obs, rwd
     if play:
         action, _ = model.predict(obs, deterministic=True)
-        obs, reward, terminated, truncated, _ = env1.step(action)
+        obs, reward, done, _ = env.step(action)
         rwd.append(reward)
-        print(reward)
-        if terminated or truncated:
+        if done:
             play = False
 
 def paint_loop(screen):
     global play, obs, rwd
     # image
     font = pygame.font.SysFont('Times New Roman', 18)
-    text = "image"
-    text_surface = font.render(text, True, (255, 255, 255))
-    screen.blit(text_surface, (buffer + img_size * pix_size / 2 - font.size(text)[0] / 2, buffer / 2))
+    # text = "image"
+    # text_surface = font.render(text, True, (255, 255, 255))
+    # screen.blit(text_surface, (buffer + img_size * pix_size / 2 - font.size(text)[0] / 2, buffer / 2))
 
-    pygame.draw.rect(screen, (100, 225, 50), (buffer + pix_size * 128 / 2, buffer + pix_size * 128 / 2, pix_size, pix_size)) # image center
-    pygame.draw.rect(screen, (255, 255, 255), (buffer - 1, buffer - 1, pix_size * img_size + 2, pix_size * img_size + 2), width = 2) # bounding box of image
-    for r in range(img_size):
-        for c in range(img_size):
-            col = 255 * obs[0][r][c]
-            pygame.draw.rect(screen, (col, col, col), (c * pix_size + buffer, r * pix_size + buffer, pix_size, pix_size)) # image
+    # pygame.draw.rect(screen, (100, 225, 50), (buffer + pix_size * 128 / 2, buffer + pix_size * 128 / 2, pix_size, pix_size)) # image center
+    # pygame.draw.rect(screen, (255, 255, 255), (buffer - 1, buffer - 1, pix_size * img_size + 2, pix_size * img_size + 2), width = 2) # bounding box of image
+    # for r in range(img_size):
+    #     for c in range(img_size):
+    #         col = 255 * obs[0][r][c]
+    #         pygame.draw.rect(screen, (col, col, col), (c * pix_size + buffer, r * pix_size + buffer, pix_size, pix_size)) # image
     
 
     # detected
-    text = "detected centroids"
+    text = "true centroids"
     text_surface = font.render(text, True, (255, 255, 255))
     screen.blit(text_surface, (buffer + img_size * pix_size + buffer + img_size * pix_size / 2 - font.size(text)[0] / 2, buffer / 2))
 
-    det = base_env._detected_fp_coords(obs[0])
+    det = env.get_attr("telescope")[0].true_centroids
     pygame.draw.rect(screen, (255, 255, 255), (buffer + pix_size * img_size + buffer - 1, buffer - 1, pix_size * img_size + 2, pix_size * img_size + 2), width = 2) # bounding box of detected
     for (fx, fy) in (det):
-        u, v = base_env._fp_to_uv(fx, fy)
+        u, v = env.get_attr("telescope")[0]._fp_to_uv(fx, fy)
         x, y = u * pix_size + (buffer + pix_size * img_size + buffer), v * pix_size + buffer
         pygame.draw.rect(screen, (255, 255, 255), (x, y, pix_size, pix_size), width = 2) # bounding box of detected
     
@@ -106,12 +103,13 @@ def paint_loop(screen):
         for i, reward in enumerate(rwd):
             x = x0 + dx * i
             y = y0 - (reward - min_graph_val) * scale
+            y = int(y[0])
             pygame.draw.line(screen, (255, 255, 255), prev, (x, y))
             prev = (x, y)
     
     # center
     if show_center:
-        centerx, centery = base_env._fp_to_uv(base_env.center[0], base_env.center[1])
+        centerx, centery = env.get_attr("telescope")[0]._fp_to_uv(env.get_attr("telescope")[0].center[0], env.get_attr("telescope")[0].center[1])
         xi, yi = centerx * pix_size + buffer, centery * pix_size + buffer
         xd, yd = centerx * pix_size + (buffer + pix_size * img_size + buffer), centery * pix_size + buffer
         pygame.draw.rect(screen, (100, 235, 50), (xi, yi, pix_size, pix_size), width = 2) # center of the image
@@ -123,7 +121,7 @@ def input_loop(keys, mouse, mouse_pos):
         play = True
     if keys[pygame.K_r]:
         play = False
-        obs, _ = env1.reset()
+        obs = env.reset()
         rwd = []
 
 

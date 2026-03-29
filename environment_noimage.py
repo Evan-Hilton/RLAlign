@@ -21,7 +21,7 @@ from image_analyzer import image_analyzer
 class pSCT_environment(gym.Env):
 
     def __init__(self,
-                 n_panels = 2,
+                 n_panels = 1,
                  memory_time = 3 # how many steps backward in time the agent can see
                  ):
         

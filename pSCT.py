@@ -226,7 +226,7 @@ class pSCT:
         NOTE: this method uses the true centroids. true centroid locations are not accessible
         on a real telescope, so use this method with caution
     """
-    def all_centroids_at_center(self, centroid_locations=None, success_radius=3.5):
+    def all_centroids_at_center(self, centroid_locations=None, success_radius=5):
         # if no location is given, use the true location
         if centroid_locations is None:
             centroid_locations = self.true_centroids
