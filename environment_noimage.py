@@ -42,7 +42,7 @@ class pSCT_environment(gym.Env):
 
         # image information
         self.memory_time = memory_time # m frames of memory in the observation
-        self.memory = None # np array with shape: (2 * self.n_panels, self.memory_time)
+        self.memory = None # np array with shape: (self.memory_time, 2 * self.n_panels)
 
         # Observation: each true centroid location given by (x1, y1, x2, y2, ..., xn, yn). this is stacked
         # for each time step in the past that the agent has access to (see memory_time). this vector is then
@@ -116,7 +116,7 @@ class pSCT_environment(gym.Env):
         self.step_count += 1
         info = {}
 
-        return self.memory.flatten(), reward, terminated, truncated, info
+        return self.memory.flatten(order='F'), reward, terminated, truncated, info
 
     """
         Resets the environment to an initial internal state, returning an initial observation and info.
@@ -136,9 +136,9 @@ class pSCT_environment(gym.Env):
         self.telescope.set_random_rotations()
 
         # set up the observation
-        self.memory = np.zeros((2*self.n_panels, self.memory_time), dtype=np.float32)
+        self.memory = np.zeros((self.memory_time, 2*self.n_panels), dtype=np.float32)
         single_step_obs = self.telescope.get_normalized_centroid_fp_coords_on_screen().reshape(-1) # get flattened normalized true centroid locations
-        self.memory[:] = single_step_obs[:, None]
+        self.memory[:] = single_step_obs
 
         # set up reward shaping
         self.prev_cost = self.cost_from_detected_centroids(self.telescope.true_centroids)
@@ -156,6 +156,4 @@ class pSCT_environment(gym.Env):
 
     def increment_memory(self, img):
         self.memory[1:] = self.memory[:-1] # shift all frames forward (ignoring first fram and overriding last frame)
-        print(img.shape)
-        print(self.memory.shape)
         self.memory[0] = img

@@ -31,13 +31,13 @@ rew = 0
 def main_loop(FRAME):
     global obs, det, action, rew
     #print(action)
-    observation, reward, _, _, det_dict = env.step(action)
+    observation, reward, terminated, _, det_dict = env.step(action)
     #print(observation.min())
     obs = observation[0]
     rew = reward
     #det = det_dict["detected"]
     c = env.telescope.true_centroids[0]
-    #print(action)
+    print(terminated)
     #print(env.telescope._fp_to_uv(c[0], c[1]))
 
 def paint_loop(screen):
