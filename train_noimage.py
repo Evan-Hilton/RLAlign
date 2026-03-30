@@ -42,24 +42,24 @@ if __name__ == "__main__":
             ),
             activation_fn=nn.ReLU,
         ),
-        learning_rate=1e-4,
+        learning_rate=5e-5,
         n_steps=512,
         batch_size=32,
         n_epochs=15,
         gamma=0.99,
         gae_lambda=0.95,
-        clip_range=0.1,
-        ent_coef=0.002,
+        clip_range=0.2,
+        ent_coef=0.001,
         vf_coef=0.5,
         max_grad_norm=0.5,
         verbose=1,
         normalize_advantage=True,
-        tensorboard_log="./ppo_logs/architecture_exp/",
+        tensorboard_log="./ppo_logs/v7/experiment1/",
     )
 
-    version = "v6.30.7"
+    version = "v7.1.2"
 
-    model.learn(total_timesteps=200_000)
+    model.learn(total_timesteps=550_000)
     model.save("models/" + version)
     env.save("envs/" + version)
     env.close()

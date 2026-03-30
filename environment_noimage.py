@@ -21,7 +21,7 @@ from image_analyzer import image_analyzer
 class pSCT_environment(gym.Env):
 
     def __init__(self,
-                 n_panels = 1,
+                 n_panels = 2,
                  memory_time = 3 # how many steps backward in time the agent can see
                  ):
         
@@ -150,6 +150,7 @@ class pSCT_environment(gym.Env):
     def cost_from_detected_centroids(self, detected_fp_coords):
         d = detected_fp_coords - self.telescope.center[None, :]
         mean_r2 = float(np.mean(np.sqrt(np.sum(d**2, axis=1))))
+        self.normalize_centroid_error(mean_r2)
 
         cost = mean_r2
         return cost
@@ -157,3 +158,11 @@ class pSCT_environment(gym.Env):
     def increment_memory(self, img):
         self.memory[1:] = self.memory[:-1] # shift all frames forward (ignoring first fram and overriding last frame)
         self.memory[0] = img
+
+    def normalize_centroid_error(self, avg_centroid_distance):
+        # scale the centroid distance by the maximum distance away it can be (without truncating)
+        x_max_fp, y_max_fp = self.telescope._uv_to_fp(0, 0) # a centroid at 0, 0 is at the top left of the screen (max dist it can be away from center)
+        telescope_center_fp = self.telescope.center
+        max_fp_distance = np.sqrt((x_max_fp - telescope_center_fp[0])**2 + (y_max_fp - telescope_center_fp[1])**2)
+        print(avg_centroid_distance / max_fp_distance)
+        return avg_centroid_distance / max_fp_distance

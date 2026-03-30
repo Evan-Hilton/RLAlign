@@ -38,7 +38,7 @@ def main_loop(FRAME):
     #det = det_dict["detected"]
     c = env.telescope.true_centroids[0]
     #print(env.telescope._fp_to_uv(c[0], c[1]))
-    print(env.telescope.all_centroids_at_center())
+    #print(env.telescope.all_centroids_at_center())
 
 def paint_loop(screen):
     global play, obs, rew
