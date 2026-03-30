@@ -147,6 +147,10 @@ class pSCT_environment(gym.Env):
     
     # ============================== Helper Functions ==============================
 
+    """
+        Computes how bad it is for the given centroid locations to be where they are.
+        Returns a normalized number that is 0 (really good) or 1 (really bad)
+    """
     def cost_from_detected_centroids(self, detected_fp_coords):
         d = detected_fp_coords - self.telescope.center[None, :]
         mean_r2 = float(np.mean(np.sqrt(np.sum(d**2, axis=1))))
@@ -155,14 +159,21 @@ class pSCT_environment(gym.Env):
         cost = mean_r2
         return cost
 
+    """
+        A helper method to update the current memory buffer given a new input.
+        Cycles the old memory buffer forward one space to leave room for the new observation.
+    """
     def increment_memory(self, img):
         self.memory[1:] = self.memory[:-1] # shift all frames forward (ignoring first fram and overriding last frame)
         self.memory[0] = img
 
-    def normalize_centroid_error(self, avg_centroid_distance):
+    """
+        Normalizes a distance given by 'distance' in fp coordinates from a point
+        to the center of the telescope to be between 0 (point at center) and 1 (point at a corner of the image)
+    """
+    def normalize_centroid_error(self, distance):
         # scale the centroid distance by the maximum distance away it can be (without truncating)
         x_max_fp, y_max_fp = self.telescope._uv_to_fp(0, 0) # a centroid at 0, 0 is at the top left of the screen (max dist it can be away from center)
         telescope_center_fp = self.telescope.center
         max_fp_distance = np.sqrt((x_max_fp - telescope_center_fp[0])**2 + (y_max_fp - telescope_center_fp[1])**2)
-        print(avg_centroid_distance / max_fp_distance)
-        return avg_centroid_distance / max_fp_distance
+        return distance / max_fp_distance
