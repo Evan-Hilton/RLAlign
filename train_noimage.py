@@ -25,7 +25,7 @@ with warnings.catch_warnings():
 if __name__ == "__main__":
     env = make_vec_env(
         pSCT_environment,
-        n_envs=8,
+        n_envs=16,
         vec_env_cls=SubprocVecEnv, # recommended in the documentation for speeding up training
     )
     env = VecNormalize(env, norm_reward=True, norm_obs=False) # normalize the reward so that gradient updates aren't clipped too much
@@ -37,15 +37,15 @@ if __name__ == "__main__":
         device="cpu",
         policy_kwargs = dict(
             net_arch=dict(
-                pi=[128, 128],     # policy MLP
-                vf=[128, 128]            # value MLP
+                pi=[256, 256],         # policy MLP
+                vf=[256, 256]          # value MLP
             ),
             activation_fn=nn.ReLU,
         ),
         learning_rate=1e-4,
-        n_steps=1024,
-        batch_size=64,
-        n_epochs=10,
+        n_steps=512,
+        batch_size=32,
+        n_epochs=15,
         gamma=0.99,
         gae_lambda=0.95,
         clip_range=0.1,
@@ -54,10 +54,10 @@ if __name__ == "__main__":
         max_grad_norm=0.5,
         verbose=1,
         normalize_advantage=True,
-        tensorboard_log="./ppo_logs/",
+        tensorboard_log="./ppo_logs/architecture_exp/",
     )
 
-    version = "v6.2"
+    version = "v6.30.7"
 
     model.learn(total_timesteps=200_000)
     model.save("models/" + version)

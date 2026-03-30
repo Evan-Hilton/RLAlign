@@ -18,7 +18,7 @@ background_color = (0, 0, 0) # rgb color; each value ranges from 0-225 inclusive
 # ----------------------------------------------------- variables ---------------------------------------------------------------
 
 # Load environment (must match training env)
-version = "v6.0"
+version = "v6.28"
 env = make_vec_env(
         pSCT_environment,
         n_envs=1
