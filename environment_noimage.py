@@ -101,14 +101,17 @@ class pSCT_environment(gym.Env):
         improve = self.prev_cost - cost
         reward += 0.5 * improve
 
+        # just try to make reward 0 when no movement, and positive or negative depending on how good it is
+        reward = improve * 100
+
         terminated = False
         if self.telescope.all_centroids_at_center():
             reward += 10
             terminated = True
         if self.telescope.any_centroid_outside_image():
-            reward -= 35 # truncation penalty should be 5x-20x worse than average reward (currently at ~-0.4)
+            reward -= 35 # truncation penalty should be 5x-20x worse than average reward (currently at ~-0.5)
             terminated = True
-        reward -= 0.1 # time penalty. incentivices fast solutions
+        reward -= 0.5 # time penalty. incentivices fast solutions
         self.prev_cost = cost
 
         # bookkeeping
@@ -154,7 +157,7 @@ class pSCT_environment(gym.Env):
     def cost_from_detected_centroids(self, detected_fp_coords):
         d = detected_fp_coords - self.telescope.center[None, :]
         mean_r2 = float(np.mean(np.sqrt(np.sum(d**2, axis=1))))
-        self.normalize_centroid_error(mean_r2)
+        mean_r2 = self.normalize_centroid_error(mean_r2)
 
         cost = mean_r2
         return cost
