@@ -25,10 +25,10 @@ with warnings.catch_warnings():
 if __name__ == "__main__":
     env = make_vec_env(
         pSCT_environment,
-        n_envs=16,
+        n_envs=8,
         vec_env_cls=SubprocVecEnv, # recommended in the documentation for speeding up training
     )
-    env = VecNormalize(env, norm_reward=True, norm_obs=False) # normalize the reward so that gradient updates aren't clipped too much
+    #env = VecNormalize(env, norm_reward=True, norm_obs=False) # normalize the reward so that gradient updates aren't clipped too much
     # ultimately, env wraps VecNormalize, which wraps SupprocVecEnv, which wraps MirrorEnvImageDetect
 
     model = PPO(
@@ -37,14 +37,14 @@ if __name__ == "__main__":
         device="cpu",
         policy_kwargs = dict(
             net_arch=dict(
-                pi=[256, 256],         # policy MLP
-                vf=[256, 256]          # value MLP
+                pi=[256, 256, 256],         # policy MLP
+                vf=[256, 256, 256]          # value MLP
             ),
             activation_fn=nn.ReLU,
         ),
-        learning_rate=5e-5,
+        learning_rate=7e-5,
         n_steps=512,
-        batch_size=32,
+        batch_size=64,
         n_epochs=15,
         gamma=0.99,
         gae_lambda=0.95,
@@ -57,9 +57,9 @@ if __name__ == "__main__":
         tensorboard_log="./ppo_logs/v7/experiment1/",
     )
 
-    version = "v7.1.2"
+    version = "v7.1.12"
 
-    model.learn(total_timesteps=550_000)
+    model.learn(total_timesteps=1_250_000)
     model.save("models/" + version)
-    env.save("envs/" + version)
+    #env.save("envs/" + version)
     env.close()

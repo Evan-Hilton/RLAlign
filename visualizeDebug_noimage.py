@@ -77,7 +77,7 @@ def paint_loop(screen):
     text = "'R' to reset game"
     text_surface = font.render(text, True, (255, 255, 255))
     screen.blit(text_surface, (400 + buffer + img_size * pix_size + buffer + img_size * pix_size / 2 - font.size(text)[0] / 2, 35 + buffer / 2))
-    text = f"Current score: {rew}"
+    text = f"Current score: {round(rew * 1000)}"
     text_surface = font.render(text, True, (255, 255, 255))
     screen.blit(text_surface, (400 + buffer + img_size * pix_size + buffer + img_size * pix_size / 2 - font.size(text)[0] / 2, 35+18 + buffer / 2))
     

@@ -18,13 +18,13 @@ background_color = (0, 0, 0) # rgb color; each value ranges from 0-225 inclusive
 # ----------------------------------------------------- variables ---------------------------------------------------------------
 
 # Load environment (must match training env)
-version = "v7.1.1"
+version = "v7.1.12"
 env = make_vec_env(
         pSCT_environment,
         n_envs=1
         #vec_env_cls=SubprocVecEnv, # recommended in the documentation for speeding up training
     )
-env = VecNormalize.load("envs/" + version, env)
+#env = VecNormalize.load("envs/" + version, env)
 env.training = False
 env.norm_reward = False
 
@@ -48,6 +48,7 @@ def main_loop(FRAME): # the current frame number is passed to the main loop if y
     if play:
         action, _ = model.predict(obs, deterministic=True)
         obs, reward, done, _ = env.step(action)
+        print(reward)
         rwd.append(reward)
         if done:
             play = False

@@ -7,10 +7,11 @@ from environment_noimage import pSCT_environment
 from stable_baselines3 import PPO
 
 # load this model and env
-version = "v7.1.1"
+version = "v7.1.12"
+time_steps = 250_000
+
 path_to_saved_model = "models/" + version
 path_to_saved_env   = "envs/" + version
-time_steps    =       250_000
 
 # save to this model and env
 path_to_new_model   = "models/" + version
@@ -23,7 +24,7 @@ if __name__ == '__main__':
         n_envs=8,
         vec_env_cls=SubprocVecEnv,
     )
-    env = VecNormalize.load(path_to_saved_env, env)
+    #env = VecNormalize.load(path_to_saved_env, env)
     env.training = True
     env.norm_reward = True   # match what was trained with
 
@@ -37,4 +38,4 @@ if __name__ == '__main__':
 
     model.learn(total_timesteps=time_steps, reset_num_timesteps=False)
     model.save(path_to_new_model)
-    env.save(path_to_new_env)
+    #env.save(path_to_new_env)

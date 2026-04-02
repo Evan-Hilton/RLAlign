@@ -22,7 +22,7 @@ class pSCT_environment(gym.Env):
 
     def __init__(self,
                  n_panels = 2,
-                 memory_time = 3 # how many steps backward in time the agent can see
+                 memory_time = 2 # how many steps backward in time the agent can see
                  ):
         
         # bookkeeping
@@ -90,32 +90,45 @@ class pSCT_environment(gym.Env):
 
         # rotate the panel
         self.telescope.rotate_panel(self.P1s[action[0]], rotation_x, rotation_y)
+        if self.telescope.any_centroid_outside_image(): # if the action causes a panel to go outside the image, don't take the action
+            self.telescope.rotate_panel(self.P1s[action[0]], -rotation_x, -rotation_y)
 
         # update memory - give the new observation to the memory. see self.observation_space to see why we do this
         single_step_obs = self.telescope.get_normalized_centroid_fp_coords_on_screen().reshape(-1)
         self.increment_memory(single_step_obs)
 
-        # calculate reward and reward shaping
-        cost = self.cost_from_detected_centroids(self.telescope.true_centroids)
-        reward = -cost
-        improve = self.prev_cost - cost
-        reward += 0.5 * improve
+        # calculate sparse reward. +10 if the agent finishes the task, -3 if the agent loses early, -0.05 every step to incentivise fast solutions
+        # terminated = False
+        # reward = 0
+        # if self.telescope.all_centroids_at_center():
+        #     reward += 2
+        #     terminated = True
+        # if self.telescope.any_centroid_outside_image():
+        #     reward -= 1 # truncation penalty should be 5x-20x worse than average reward (currently at ~-0.5)
+        #     terminated = True
+        # reward -= 0.05 # time penalty. incentivices fast solutions
 
-        # just try to make reward 0 when no movement, and positive or negative depending on how good it is
-        reward = improve * 100
+        # truncated = self.step_count >= self.max_steps
+        # if truncated:
+        #     reward -= 2
+
+        # # calculate potential based reward shaping. potential should be high at a good state and low at a bad state
+        # potential_discount_factor = 0.98
+        # potential = -self.cost_from_detected_centroids(self.telescope.true_centroids) * 20
+        # reward = reward + potential_discount_factor * potential - self.prev_potential # prev_potential = -prev_cost
+        # self.prev_potential = potential
+
+        # real rewards
+        cost = self.cost_from_detected_centroids(self.telescope.true_centroids) * 1.2 # 0 good, 1 bad
+        reward = -cost # 0 good, -1 bad
 
         terminated = False
-        if self.telescope.all_centroids_at_center():
+        if self.telescope.all_centroids_at_center(success_radius=15): # success
             reward += 10
             terminated = True
-        if self.telescope.any_centroid_outside_image():
-            reward -= 35 # truncation penalty should be 5x-20x worse than average reward (currently at ~-0.5)
-            terminated = True
-        reward -= 0.5 # time penalty. incentivices fast solutions
-        self.prev_cost = cost
-
+        
         # bookkeeping
-        truncated = self.step_count >= self.max_steps
+        truncated = self.step_count >= self.max_steps - 1
         self.step_count += 1
         info = {}
 
@@ -156,10 +169,11 @@ class pSCT_environment(gym.Env):
     """
     def cost_from_detected_centroids(self, detected_fp_coords):
         d = detected_fp_coords - self.telescope.center[None, :]
-        mean_r2 = float(np.mean(np.sqrt(np.sum(d**2, axis=1))))
+        mean_r2 = float(np.mean(np.sum(d**2, axis=1)))
         mean_r2 = self.normalize_centroid_error(mean_r2)
 
-        cost = mean_r2
+        cost = mean_r2 / (8 * 50)
+        #print(cost)
         return cost
 
     """
