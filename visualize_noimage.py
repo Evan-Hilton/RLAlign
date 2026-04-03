@@ -12,13 +12,13 @@ game_name = "pSCT alignment noimage visualizer" # the name of the window that po
 WIDTH = 1352 # pixels
 HEIGHT = 484 + 50 # pixels
 FRAME = 0
-FRAME_RATE = 60 # frames / second
+FRAME_RATE = 160 # frames / second
 background_color = (0, 0, 0) # rgb color; each value ranges from 0-225 inclusive
 
 # ----------------------------------------------------- variables ---------------------------------------------------------------
 
 # Load environment (must match training env)
-version = "v7.1.12"
+version = "v7.3.5"
 env = make_vec_env(
         pSCT_environment,
         n_envs=1
@@ -48,7 +48,7 @@ def main_loop(FRAME): # the current frame number is passed to the main loop if y
     if play:
         action, _ = model.predict(obs, deterministic=True)
         obs, reward, done, _ = env.step(action)
-        print(reward)
+        #print(reward)
         rwd.append(reward)
         if done:
             play = False

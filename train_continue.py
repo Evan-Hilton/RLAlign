@@ -7,8 +7,8 @@ from environment_noimage import pSCT_environment
 from stable_baselines3 import PPO
 
 # load this model and env
-version = "v7.1.12"
-time_steps = 250_000
+version = "v7.3.6"
+time_steps = 1_000_000
 
 path_to_saved_model = "models/" + version
 path_to_saved_env   = "envs/" + version
@@ -23,10 +23,11 @@ if __name__ == '__main__':
         pSCT_environment,
         n_envs=8,
         vec_env_cls=SubprocVecEnv,
+        env_kwargs={"n_panels":6}
     )
     #env = VecNormalize.load(path_to_saved_env, env)
     env.training = True
-    env.norm_reward = True   # match what was trained with
+    #env.norm_reward = True   # match what was trained with
 
     env.reset()
 

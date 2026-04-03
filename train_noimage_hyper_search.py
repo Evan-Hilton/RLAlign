@@ -21,12 +21,12 @@ with warnings.catch_warnings():
     )
     check_env(env, warn=True)
 
-# Train
-if __name__ == "__main__":
+def train_model(lr=2e-4, bs=32, n_epo=10, e_coef=0.001, path="default", model_name="v7.3.1", n_panl=1):
     env = make_vec_env(
         pSCT_environment,
         n_envs=8,
         vec_env_cls=SubprocVecEnv, # recommended in the documentation for speeding up training
+        env_kwargs={"n_panels": n_panl}
     )
     #env = VecNormalize(env, norm_reward=True, norm_obs=False) # normalize the reward so that gradient updates aren't clipped too much
     # ultimately, env wraps VecNormalize, which wraps SupprocVecEnv, which wraps MirrorEnvImageDetect
@@ -37,29 +37,51 @@ if __name__ == "__main__":
         device="cpu",
         policy_kwargs = dict(
             net_arch=dict(
-                pi=[128, 128],         # policy MLP
-                vf=[128, 128]          # value MLP
+                pi=[256, 256],         # policy MLP
+                vf=[256, 256]          # value MLP
             ),
             activation_fn=nn.ReLU,
         ),
-        learning_rate=7e-5,
+        learning_rate=lr,
         n_steps=512,
-        batch_size=64,
-        n_epochs=10,
+        batch_size=bs,
+        n_epochs=n_epo,
         gamma=0.99,
         gae_lambda=0.95,
         clip_range=0.2,
-        ent_coef=0.01,
+        ent_coef=e_coef,
         vf_coef=0.5,
         max_grad_norm=0.5,
         verbose=1,
         normalize_advantage=True,
-        tensorboard_log="./ppo_logs/v7/experiment1/",
+        tensorboard_log="./ppo_logs/v7/experiment3/" + path + "/",
     )
 
-    version = "v7.1.16"
+    version = model_name
 
-    model.learn(total_timesteps=1_500_000)
+    model.learn(total_timesteps=3_000_000)
     model.save("models/" + version)
     #env.save("envs/" + version)
     env.close()
+
+# Train
+if __name__ == "__main__":
+    # 7.2
+    # model_num = 1
+    # model_num += 1
+    # for lr in [3e-4]:
+    #     train_model(lr=lr, path="learning_rate_exp", model_name="v7.2." + str(model_num))
+    #     model_num += 1
+    # for batch_size in [32, 128]:
+    #     train_model(bs=batch_size, path="batch_size_exp", model_name="v7.2." + str(model_num))
+    #     model_num += 1
+    # for n_epochs in [5, 15]:
+    #     train_model(n_epo=n_epochs, path="n_epochs_exp", model_name="v7.2." + str(model_num))
+    #     model_num += 1
+    # for ent_coef in [0.001, 0.02, 0.05]:
+    #     train_model(e_coef=ent_coef, path="ent_coef_exp", model_name="v7.2." + str(model_num))
+    #     model_num += 1
+    model_num = 1
+    for i in [1, 2, 3, 4, 5, 6, 7, 8]:
+        train_model(path="n_panels_exp", model_name="v7.3." + str(i), n_panl=i)
+        model_num += 1

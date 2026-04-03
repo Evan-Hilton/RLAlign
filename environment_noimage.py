@@ -21,13 +21,14 @@ from image_analyzer import image_analyzer
 class pSCT_environment(gym.Env):
 
     def __init__(self,
-                 n_panels = 2,
-                 memory_time = 2 # how many steps backward in time the agent can see
+                 n_panels = 6,
+                 memory_time = 1 # how many steps backward in time the agent can see
                  ):
         
         # bookkeeping
         self.step_count = 0
-        self.max_steps = 512 # the maximum amount of time the agent is allowed to move for
+        # self.max_steps = 512 # the maximum amount of time the agent is allowed to move for
+        self.max_steps = 1024 # the maximum amount of time the agent is allowed to move for
         self.prev_cost = 0
         
         # panels
@@ -36,6 +37,7 @@ class pSCT_environment(gym.Env):
         # discretize the action rotations into self.action_quant amount of discrete values
         # note that action_quant should be odd so that (action_quant - 1) / 2 maps to rotation = 0 (allow the agent to not move a panel)
         self.action_quant: int = 25 # if this is 25, then the agent can choose between 25 values to move the panels by. 0 and 25 represent maximum motion
+        self.current_panel = 0
 
         # the pSCT telescope
         self.telescope = pSCT(n_panels=self.n_panels)
@@ -52,73 +54,44 @@ class pSCT_environment(gym.Env):
         self.observation_space = spaces.Box(
             low=-1,
             high=1,
-            shape=(self.n_panels * 2 * self.memory_time,),
+            shape=(self.n_panels * 2 * self.memory_time + self.memory_time,), # +self.memory_time because we give the agent which panel it's about to control at each time step
             dtype=np.float32,
         )
 
         # Action: (panel choice, rx, ry)
         # panel choice is a number between 0 and n_panels - 1. 
         # rx and ry are discretized to 25 unique values.
-        self.action_space = spaces.MultiDiscrete([self.n_panels, self.action_quant, self.action_quant], dtype=np.uint8)
+        self.action_space = spaces.MultiDiscrete([self.action_quant, self.action_quant], dtype=np.uint8)
     
     # =================================== API ===================================
     
     """
         -Run one timestep of the environment's dynamics using the agent actions.
         For each panel in the simulation, the agent chooses to update its position
-        by providing a rotation rx, ry. 
-        -Takes each rotation and updates the location of the panel's corresponding 
-        image and renders it.
+        by providing a rotation rx, ry and a panel to apply that rotation to.
         -Calculates and returns the reward corresponding with the provided action
-        
-        params:
-        action (numpy.ndarray with shape (1, 2)):        panel rotations. the nth panel is rotated rx, ry = action[n]
-
-        returns:
-        observation (numpy.ndarray with shape (img_size, img_size)):    the new environment state
-        reward (Float):                                                 how beneficial the action was
-        terminated (bool):                                              whether the agent reaches the terminal state
-        truncated (bool):                                               whether the agent reaches a state that should cause the simulation to stop early
-        info (dict):                                                    contains debugging information
     """
     def step(self, action):
         # normalize actions given by the network. map [0, action_quant] -> [-1, 1]
-        rotation_x = action[1] - ((self.action_quant - 1) / 2)          # action values surround zero
+        rotation_x = action[0] - ((self.action_quant - 1) / 2)          # action values surround zero
         rotation_x = rotation_x * 1.0 / ((self.action_quant - 1) / 2)   # action scaled between -1 and 1
-        rotation_y = action[2] - ((self.action_quant - 1) / 2)          # action values surround zero
+        rotation_y = action[1] - ((self.action_quant - 1) / 2)          # action values surround zero
         rotation_y = rotation_y * 1.0 / ((self.action_quant - 1) / 2)   # action scaled between -1 and 1
 
         # rotate the panel
-        self.telescope.rotate_panel(self.P1s[action[0]], rotation_x, rotation_y)
+        self.telescope.rotate_panel(self.P1s[self.current_panel], rotation_x, rotation_y)
         if self.telescope.any_centroid_outside_image(): # if the action causes a panel to go outside the image, don't take the action
-            self.telescope.rotate_panel(self.P1s[action[0]], -rotation_x, -rotation_y)
+            self.telescope.rotate_panel(self.P1s[self.current_panel], -rotation_x, -rotation_y)
+        
+        # update panel control
+        self.current_panel = (self.current_panel + 1) % self.n_panels
 
         # update memory - give the new observation to the memory. see self.observation_space to see why we do this
         single_step_obs = self.telescope.get_normalized_centroid_fp_coords_on_screen().reshape(-1)
+        single_step_obs = np.append(single_step_obs, self.current_panel) # make sure panel is updated BEFORE this line call. we want the environment to tell the agent which panel it's ABOUT to control
         self.increment_memory(single_step_obs)
 
-        # calculate sparse reward. +10 if the agent finishes the task, -3 if the agent loses early, -0.05 every step to incentivise fast solutions
-        # terminated = False
-        # reward = 0
-        # if self.telescope.all_centroids_at_center():
-        #     reward += 2
-        #     terminated = True
-        # if self.telescope.any_centroid_outside_image():
-        #     reward -= 1 # truncation penalty should be 5x-20x worse than average reward (currently at ~-0.5)
-        #     terminated = True
-        # reward -= 0.05 # time penalty. incentivices fast solutions
-
-        # truncated = self.step_count >= self.max_steps
-        # if truncated:
-        #     reward -= 2
-
-        # # calculate potential based reward shaping. potential should be high at a good state and low at a bad state
-        # potential_discount_factor = 0.98
-        # potential = -self.cost_from_detected_centroids(self.telescope.true_centroids) * 20
-        # reward = reward + potential_discount_factor * potential - self.prev_potential # prev_potential = -prev_cost
-        # self.prev_potential = potential
-
-        # real rewards
+        # reward
         cost = self.cost_from_detected_centroids(self.telescope.true_centroids) * 1.2 # 0 good, 1 bad
         reward = -cost # 0 good, -1 bad
 
@@ -137,14 +110,6 @@ class pSCT_environment(gym.Env):
     """
         Resets the environment to an initial internal state, returning an initial observation and info.
         Places each panel's image to a new random location.
-
-        params:
-        seed (None):                Satisfies the API but we introduce our own PRNG (numpy random number generator) so keep as None
-        options (optional dict):    optional debug information to include about how the environment is reset. RNG seed for example.
-
-        returns:
-        observation (numpy.ndarray with shape (n_panels, 2)):   the new environment state
-        info (dict):                                            contains debugging information. Should be the same information as returned from step()
     """
     def reset(self, *, seed=None, options=None):
         # bookkeeping
@@ -152,12 +117,15 @@ class pSCT_environment(gym.Env):
         self.telescope.set_random_rotations()
 
         # set up the observation
-        self.memory = np.zeros((self.memory_time, 2*self.n_panels), dtype=np.float32)
+        self.memory = np.zeros((self.memory_time, 2*self.n_panels + 1), dtype=np.float32) # +1 because... see self.obs_space
         single_step_obs = self.telescope.get_normalized_centroid_fp_coords_on_screen().reshape(-1) # get flattened normalized true centroid locations
+        single_step_obs = np.append(single_step_obs, self.current_panel) # make sure panel is updated BEFORE this line call. we want the environment to tell the agent which panel it's ABOUT to control
         self.memory[:] = single_step_obs
 
         # set up reward shaping
         self.prev_cost = self.cost_from_detected_centroids(self.telescope.true_centroids)
+
+        self.current_panel = 0
 
         return self.memory.flatten(order='F'), {}
     
