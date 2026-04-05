@@ -37,29 +37,29 @@ if __name__ == "__main__":
         device="cpu",
         policy_kwargs = dict(
             net_arch=dict(
-                pi=[128, 128],         # policy MLP
-                vf=[128, 128]          # value MLP
+                pi=[256, 256],         # policy MLP
+                vf=[256, 256]          # value MLP
             ),
             activation_fn=nn.ReLU,
         ),
-        learning_rate=7e-5,
+        learning_rate=1e-4,
         n_steps=512,
         batch_size=64,
         n_epochs=10,
         gamma=0.99,
         gae_lambda=0.95,
         clip_range=0.2,
-        ent_coef=0.01,
+        ent_coef=0,
         vf_coef=0.5,
         max_grad_norm=0.5,
         verbose=1,
         normalize_advantage=True,
-        tensorboard_log="./ppo_logs/v7/experiment1/",
+        tensorboard_log="./ppo_logs/v7/experiment2/ent_coef_exp/",
     )
 
-    version = "v7.1.16"
+    version = "v7.2.10"
 
-    model.learn(total_timesteps=1_500_000)
+    model.learn(total_timesteps=2_000_000)
     model.save("models/" + version)
     #env.save("envs/" + version)
     env.close()

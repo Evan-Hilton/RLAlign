@@ -21,14 +21,14 @@ from image_analyzer import image_analyzer
 class pSCT_environment(gym.Env):
 
     def __init__(self,
-                 n_panels = 6,
+                 n_panels = 5,
                  memory_time = 1 # how many steps backward in time the agent can see
                  ):
         
         # bookkeeping
         self.step_count = 0
-        # self.max_steps = 512 # the maximum amount of time the agent is allowed to move for
-        self.max_steps = 1024 # the maximum amount of time the agent is allowed to move for
+        self.max_steps = 512 # the maximum amount of time the agent is allowed to move for
+        # self.max_steps = 1024 # the maximum amount of time the agent is allowed to move for
         self.prev_cost = 0
         
         # panels
