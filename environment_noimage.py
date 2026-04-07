@@ -30,6 +30,8 @@ class pSCT_environment(gym.Env):
         self.max_steps = 512 # the maximum amount of time the agent is allowed to move for
         # self.max_steps = 1024 # the maximum amount of time the agent is allowed to move for
         self.prev_cost = 0
+        self.action_cost_weight = 0.01 # 0 means the agent is not penalized for taking large actions. 
+                                    # 1 means the agent is penalized for large actions equally to distance away from center
         
         # panels
         self.P1s = [1111, 1112, 1113, 1114, 1211, 1212, 1213, 1214, 1311, 1312, 1313, 1314, 1411, 1412, 1413, 1414]
@@ -93,7 +95,8 @@ class pSCT_environment(gym.Env):
 
         # reward
         cost = self.cost_from_detected_centroids(self.telescope.true_centroids) * 1.2 # 0 good, 1 bad
-        reward = -cost # 0 good, -1 bad
+        action_cost = self.cost_from_action(rotation_x, rotation_y, cost) # rotation_x and rotation_y are between -1 and 1
+        reward = -(cost + self.action_cost_weight * action_cost)
 
         terminated = False
         if self.telescope.all_centroids_at_center(success_radius=15): # success
@@ -143,6 +146,14 @@ class pSCT_environment(gym.Env):
         cost = mean_r2 / (8 * 50)
         #print(cost)
         return cost
+    
+    """
+        A function describing how bad an action is. rotation_x and rotation_y
+        should be normalized between -1 and 1
+    """
+    def cost_from_action(self, rotation_x, rotation_y, cost_from_centroids):
+        #print(cost_from_centroids < 0.02) 0.02 is about 80% the way there...
+        return np.sqrt(rotation_x ** 2+ rotation_y ** 2)
 
     """
         A helper method to update the current memory buffer given a new input.

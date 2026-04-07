@@ -54,12 +54,12 @@ if __name__ == "__main__":
         max_grad_norm=0.5,
         verbose=1,
         normalize_advantage=True,
-        tensorboard_log="./ppo_logs/v7/experiment2/ent_coef_exp/",
+        tensorboard_log="./ppo_logs/v8/experiment1/",
     )
 
-    version = "v7.2.10"
+    version = "v8.1.4"
 
-    model.learn(total_timesteps=2_000_000)
+    model.learn(total_timesteps=500_000)
     model.save("models/" + version)
     #env.save("envs/" + version)
     env.close()

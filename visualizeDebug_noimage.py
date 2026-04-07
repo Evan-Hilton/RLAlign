@@ -14,7 +14,7 @@ background_color = (0, 0, 0) # rgb color; each value ranges from 0-225 inclusive
 
 # ----------------------------------------------------- variables ---------------------------------------------------------------
 
-env = pSCT_environment(n_panels=2)
+env = pSCT_environment(n_panels=1)
 obs, _ = env.reset()
 
 # ----------------------------------------------------- game logic --------------------------------------------------------------
@@ -27,16 +27,12 @@ action = np.asarray([0, 12, 12], dtype=np.uint8)
 controlling = 0
 switch = False
 rew = 0
+anyInput = False
 
 def main_loop(FRAME):
     global obs, det, action, rew
     #print(action)
-    observation, reward, terminated, _, det_dict = env.step(action)
-    #print(observation.min())
-    obs = observation[0]
-    rew = reward
-    #det = det_dict["detected"]
-    c = env.telescope.true_centroids[0]
+    
     #print(env.telescope._fp_to_uv(c[0], c[1]))
     #print(env.telescope.all_centroids_at_center())
 
@@ -92,7 +88,7 @@ def paint_loop(screen):
     
 
 def input_loop(keys, mouse, mouse_pos):
-    global play, obs, action, up, switch, controlling
+    global play, obs, action, up, switch, controlling, rew, anyInput
     if mouse[0]:
         x = (mouse_pos[0] - 50) / pix_size
         y = (mouse_pos[1] - 50) / pix_size
@@ -102,31 +98,43 @@ def input_loop(keys, mouse, mouse_pos):
         ind = np.argmin(dists)
         env.telescope.true_centroids[ind] = [fx, fy]
     
-    vert = 12
+    
+    inputCount = 0
     if keys[pygame.K_UP]:# and not up:
-        vert += 12
+        inputCount += 1
     if keys[pygame.K_DOWN]:# and not up:
-        vert -= 12
+        inputCount += 1
+
+    if keys[pygame.K_RIGHT]:# and not up:
+        inputCount += 1
+    if keys[pygame.K_LEFT]:# and not up:
+        inputCount += 1
+
+    vert = 12
+    if keys[pygame.K_UP] and not anyInput:# and not up:
+        vert += 11
+    if keys[pygame.K_DOWN] and not anyInput:# and not up:
+        vert -= 11
 
     horz = 12
-    if keys[pygame.K_RIGHT]:# and not up:
-        horz += 12
-    if keys[pygame.K_LEFT]:# and not up:
-        horz -= 12
-
-
-    if keys[pygame.K_SPACE] and not switch:
-        controlling = (controlling + 1) % env.n_panels
-    
-    if keys[pygame.K_SPACE]:
-        switch = True
-    else:
-        switch = False
+    if keys[pygame.K_RIGHT] and not anyInput:# and not up:
+        horz += 11
+    if keys[pygame.K_LEFT] and not anyInput:# and not up:
+        horz -= 11
     
     if keys[pygame.K_r]:
         env.reset()
-
-    action = np.asarray([controlling, horz, vert],dtype=np.uint8)
+    
+    if inputCount > 0:
+        anyInput = True
+    else:
+        anyInput = False
+    
+    action = np.asarray([horz, vert],dtype=np.uint8)
+    observation, reward, terminated, _, det_dict = env.step(action)
+    #print(observation.min())
+    obs = observation[0]
+    rew = reward
 
 
 # -------------------------------------------------- background functionality -------------------------------------------------

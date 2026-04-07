@@ -37,7 +37,8 @@ class pSCT:
         self.rx_ry = None
 
         # rotation information
-        self.action_scale = 0.05
+        #self.action_scale = 0.05
+        self.action_scale = 0.75
 
     """
         Returns the image currently seen by the pSCT camera of an on-axis star.
