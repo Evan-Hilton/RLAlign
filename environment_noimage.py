@@ -63,7 +63,13 @@ class pSCT_environment(gym.Env):
         # Action: (panel choice, rx, ry)
         # panel choice is a number between 0 and n_panels - 1. 
         # rx and ry are discretized to 25 unique values.
-        self.action_space = spaces.MultiDiscrete([self.action_quant, self.action_quant], dtype=np.uint8)
+        self.action_space = spaces.Box(
+            low=-1,
+            high=1,
+            shape=(2,),
+            dtype=np.float32,
+        )
+        #self.action_space = spaces.MultiDiscrete([self.action_quant, self.action_quant], dtype=np.uint8)
     
     # =================================== API ===================================
     
@@ -75,10 +81,12 @@ class pSCT_environment(gym.Env):
     """
     def step(self, action):
         # normalize actions given by the network. map [0, action_quant] -> [-1, 1]
-        rotation_x = action[0] - ((self.action_quant - 1) / 2)          # action values surround zero
-        rotation_x = rotation_x * 1.0 / ((self.action_quant - 1) / 2)   # action scaled between -1 and 1
-        rotation_y = action[1] - ((self.action_quant - 1) / 2)          # action values surround zero
-        rotation_y = rotation_y * 1.0 / ((self.action_quant - 1) / 2)   # action scaled between -1 and 1
+        # rotation_x = action[0] - ((self.action_quant - 1) / 2)          # action values surround zero
+        # rotation_x = rotation_x * 1.0 / ((self.action_quant - 1) / 2)   # action scaled between -1 and 1
+        # rotation_y = action[1] - ((self.action_quant - 1) / 2)          # action values surround zero
+        # rotation_y = rotation_y * 1.0 / ((self.action_quant - 1) / 2)   # action scaled between -1 and 1
+        rotation_x = action[0]
+        rotation_y = action[1]
 
         # rotate the panel
         self.telescope.rotate_panel(self.P1s[self.current_panel], rotation_x, rotation_y)
