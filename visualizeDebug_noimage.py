@@ -89,38 +89,38 @@ def paint_loop(screen):
 
 def input_loop(keys, mouse, mouse_pos):
     global play, obs, action, up, switch, controlling, rew, anyInput
-    if mouse[0]:
-        x = (mouse_pos[0] - 50) / pix_size
-        y = (mouse_pos[1] - 50) / pix_size
-        fx, fy = env.telescope._uv_to_fp(x, y)
-        diff = env.telescope.true_centroids - np.array([fx, fy])
-        dists = np.sum(diff**2, axis=1)
-        ind = np.argmin(dists)
-        env.telescope.true_centroids[ind] = [fx, fy]
-    
+    # if mouse[0]:
+    #     x = (mouse_pos[0] - 50) / pix_size
+    #     y = (mouse_pos[1] - 50) / pix_size
+    #     fx, fy = env.telescope._uv_to_fp(x, y)
+    #     diff = env.telescope.true_centroids - np.array([fx, fy])
+    #     dists = np.sum(diff**2, axis=1)
+    #     ind = np.argmin(dists)
+    #     env.telescope.true_centroids[ind] = [fx, fy]
     
     inputCount = 0
-    if keys[pygame.K_UP]:# and not up:
-        inputCount += 1
-    if keys[pygame.K_DOWN]:# and not up:
+    if keys[pygame.K_UP] or keys[pygame.K_LEFT] or keys[pygame.K_DOWN] or keys[pygame.K_RIGHT]:# and not up:
         inputCount += 1
 
-    if keys[pygame.K_RIGHT]:# and not up:
-        inputCount += 1
-    if keys[pygame.K_LEFT]:# and not up:
-        inputCount += 1
-
-    vert = 12
+    vert = 0
     if keys[pygame.K_UP] and not anyInput:# and not up:
-        vert += 11
+        vert += 0.5
     if keys[pygame.K_DOWN] and not anyInput:# and not up:
-        vert -= 11
+        vert -= 0.5
 
-    horz = 12
+    horz = 0
     if keys[pygame.K_RIGHT] and not anyInput:# and not up:
-        horz += 11
+        horz += 0.5
     if keys[pygame.K_LEFT] and not anyInput:# and not up:
-        horz -= 11
+        horz -= 0.5
+    
+    #print((horz != 0) != (vert != 0))
+    if inputCount > 0 and ((horz != 0) != (vert != 0)):
+        action = np.asarray([horz, vert],dtype=np.float32)
+        observation, reward, terminated, _, det_dict = env.step(action)
+        obs = observation[0]
+        rew = reward
+        print(reward)
     
     if keys[pygame.K_r]:
         env.reset()
@@ -129,12 +129,6 @@ def input_loop(keys, mouse, mouse_pos):
         anyInput = True
     else:
         anyInput = False
-    
-    action = np.asarray([horz, vert],dtype=np.uint8)
-    observation, reward, terminated, _, det_dict = env.step(action)
-    #print(observation.min())
-    obs = observation[0]
-    rew = reward
 
 
 # -------------------------------------------------- background functionality -------------------------------------------------

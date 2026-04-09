@@ -54,7 +54,7 @@ def train_model(lr=1e-4, bs=64, n_epo=10, e_coef=0.001, path="default", model_na
         max_grad_norm=0.5,
         verbose=1,
         normalize_advantage=True,
-        tensorboard_log="./ppo_logs/v8/experiment3/" + path + "/",
+        tensorboard_log="./ppo_logs/v8/experiment4/" + path + "/",
     )
 
     version = model_name
@@ -82,4 +82,4 @@ if __name__ == "__main__":
     #     train_model(e_coef=ent_coef, path="ent_coef_exp", model_name="v7.2." + str(model_num))
     #     model_num += 1
     for i in [6, 7, 8, 9, 10]:
-        train_model(path="n_panels_exp", model_name="v8.3." + str(i), n_panl=i)
+        train_model(path="n_panels_exp", model_name="v8.4." + str(i), n_panl=i)

@@ -98,9 +98,16 @@ class pSCT_environment(gym.Env):
         single_step_obs = np.append(single_step_obs, self.current_panel) # make sure panel is updated BEFORE this line call. we want the environment to tell the agent which panel it's ABOUT to control
         self.increment_memory(single_step_obs)
 
-        # reward
+        # get the cost from this state
         cost = self.cost_from_detected_centroids(self.telescope.true_centroids) * 1.2 # 0 good, 1 bad
-        reward = -cost
+        
+        # normal shaping
+        # reward = -cost
+
+        # improvement shaping
+        improve = self.prev_cost - cost
+        reward = improve * 10.0 * self.n_panels
+        self.prev_cost = cost
 
         terminated = False
         if self.telescope.all_centroids_at_center(success_radius=15): # success
