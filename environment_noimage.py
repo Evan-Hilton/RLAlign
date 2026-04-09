@@ -21,24 +21,21 @@ from image_analyzer import image_analyzer
 class pSCT_environment(gym.Env):
 
     def __init__(self,
-                 n_panels = 5,
+                 n_panels = 10,
                  memory_time = 1 # how many steps backward in time the agent can see
                  ):
         
         # bookkeeping
         self.step_count = 0
-        self.max_steps = 512 # the maximum amount of time the agent is allowed to move for
-        # self.max_steps = 1024 # the maximum amount of time the agent is allowed to move for
+        # self.max_steps = 512 # the maximum amount of time the agent is allowed to move for
+        self.max_steps = 1024 # the maximum amount of time the agent is allowed to move for
         self.prev_cost = 0
-        self.action_cost_weight = 0.01 # 0 means the agent is not penalized for taking large actions. 
-                                    # 1 means the agent is penalized for large actions equally to distance away from center
         
         # panels
         self.P1s = [1111, 1112, 1113, 1114, 1211, 1212, 1213, 1214, 1311, 1312, 1313, 1314, 1411, 1412, 1413, 1414]
         self.n_panels = n_panels
         # discretize the action rotations into self.action_quant amount of discrete values
         # note that action_quant should be odd so that (action_quant - 1) / 2 maps to rotation = 0 (allow the agent to not move a panel)
-        self.action_quant: int = 25 # if this is 25, then the agent can choose between 25 values to move the panels by. 0 and 25 represent maximum motion
         self.current_panel = 0
 
         # the pSCT telescope
@@ -103,8 +100,7 @@ class pSCT_environment(gym.Env):
 
         # reward
         cost = self.cost_from_detected_centroids(self.telescope.true_centroids) * 1.2 # 0 good, 1 bad
-        action_cost = self.cost_from_action(rotation_x, rotation_y, cost) # rotation_x and rotation_y are between -1 and 1
-        reward = -(cost + self.action_cost_weight * action_cost)
+        reward = -cost
 
         terminated = False
         if self.telescope.all_centroids_at_center(success_radius=15): # success
@@ -154,14 +150,6 @@ class pSCT_environment(gym.Env):
         cost = mean_r2 / (8 * 50)
         #print(cost)
         return cost
-    
-    """
-        A function describing how bad an action is. rotation_x and rotation_y
-        should be normalized between -1 and 1
-    """
-    def cost_from_action(self, rotation_x, rotation_y, cost_from_centroids):
-        #print(cost_from_centroids < 0.02) 0.02 is about 80% the way there...
-        return np.sqrt(rotation_x ** 2+ rotation_y ** 2)
 
     """
         A helper method to update the current memory buffer given a new input.

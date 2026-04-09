@@ -21,7 +21,7 @@ with warnings.catch_warnings():
     )
     check_env(env, warn=True)
 
-def train_model(lr=2e-4, bs=32, n_epo=10, e_coef=0.001, path="default", model_name="v7.3.1", n_panl=1):
+def train_model(lr=1e-4, bs=64, n_epo=10, e_coef=0.001, path="default", model_name="v7.3.1", n_panl=1):
     env = make_vec_env(
         pSCT_environment,
         n_envs=8,
@@ -43,7 +43,7 @@ def train_model(lr=2e-4, bs=32, n_epo=10, e_coef=0.001, path="default", model_na
             activation_fn=nn.ReLU,
         ),
         learning_rate=lr,
-        n_steps=512,
+        n_steps=1024,
         batch_size=bs,
         n_epochs=n_epo,
         gamma=0.99,
@@ -54,12 +54,12 @@ def train_model(lr=2e-4, bs=32, n_epo=10, e_coef=0.001, path="default", model_na
         max_grad_norm=0.5,
         verbose=1,
         normalize_advantage=True,
-        tensorboard_log="./ppo_logs/v7/experiment3/" + path + "/",
+        tensorboard_log="./ppo_logs/v8/experiment3/" + path + "/",
     )
 
     version = model_name
 
-    model.learn(total_timesteps=3_000_000)
+    model.learn(total_timesteps=1_000_000)
     model.save("models/" + version)
     #env.save("envs/" + version)
     env.close()
@@ -81,7 +81,5 @@ if __name__ == "__main__":
     # for ent_coef in [0.001, 0.02, 0.05]:
     #     train_model(e_coef=ent_coef, path="ent_coef_exp", model_name="v7.2." + str(model_num))
     #     model_num += 1
-    model_num = 1
-    for i in [1, 2, 3, 4, 5, 6, 7, 8]:
-        train_model(path="n_panels_exp", model_name="v7.3." + str(i), n_panl=i)
-        model_num += 1
+    for i in [6, 7, 8, 9, 10]:
+        train_model(path="n_panels_exp", model_name="v8.3." + str(i), n_panl=i)

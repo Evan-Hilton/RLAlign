@@ -43,21 +43,21 @@ if __name__ == "__main__":
             activation_fn=nn.ReLU,
         ),
         learning_rate=1e-4,
-        n_steps=512,
+        n_steps=1024,
         batch_size=64,
         n_epochs=10,
         gamma=0.99,
         gae_lambda=0.95,
         clip_range=0.2,
-        ent_coef=0,
+        ent_coef=0.001,
         vf_coef=0.5,
         max_grad_norm=0.5,
         verbose=1,
         normalize_advantage=True,
-        tensorboard_log="./ppo_logs/v8/experiment1/",
+        tensorboard_log="./ppo_logs/v8/experiment3/",
     )
 
-    version = "v8.1.4"
+    version = "v8.3.1"
 
     model.learn(total_timesteps=500_000)
     model.save("models/" + version)
