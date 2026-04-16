@@ -1,6 +1,6 @@
 import pygame
 import numpy as np
-from environment_noimage import pSCT_environment
+from environment_noimage_randomObs import pSCT_environment
 pygame.init()
 
 # ------------------------------------------------ necessary game settings ------------------------------------------------------
@@ -14,8 +14,8 @@ background_color = (0, 0, 0) # rgb color; each value ranges from 0-225 inclusive
 
 # ----------------------------------------------------- variables ---------------------------------------------------------------
 
-env = pSCT_environment(n_panels=10)
-obs, _ = env.reset()
+env = pSCT_environment(n_panels=1)
+obs, _ = env.reset() # np.zeros((env.n_panels * 2 * env.memory_time,), dtype=np.float32)
 
 # ----------------------------------------------------- game logic --------------------------------------------------------------
 
@@ -23,7 +23,7 @@ img_size = env.telescope.img_size # number of pixels wide
 pix_size = 3 # how many pixels wide each pixel in the observation is rendered as
 buffer = 50
 show_center = True
-action = np.asarray([0, 12, 12], dtype=np.uint8)
+action = np.asarray([0, 0], dtype=np.float32)
 controlling = 0
 switch = False
 rew = 0
@@ -58,10 +58,16 @@ def paint_loop(screen):
     
     # centroids
     pygame.draw.rect(screen, (255, 255, 255), (buffer + pix_size * img_size + buffer - 1, buffer - 1, pix_size * img_size + 2, pix_size * img_size + 2), width = 2) # bounding box of detected
-    for (fx, fy) in (env.telescope.true_centroids):
-        u, v = env.telescope._fp_to_uv(fx, fy)
-        x, y = u * pix_size + (buffer + pix_size * img_size + buffer), v * pix_size + buffer
-        pygame.draw.rect(screen, (255, 255, 255), (x, y, pix_size, pix_size), width = 2) # bounding box of detected
+    for m in range(env.memory_time):
+        #print(obs[m*env.n_panels*2:(m+1)*env.n_panels*2].reshape(-1, 2))
+        for (fx, fy) in (obs[m*env.n_panels*2:(m+1)*env.n_panels*2].reshape(-1, 2)):
+            u, v = fx * 64, fy * 64
+            x, y = u * pix_size + (buffer + pix_size * img_size + buffer + pix_size * img_size / 2), v * pix_size + (buffer + pix_size * img_size / 2)
+            pygame.draw.rect(screen, (255, 255, 255), (x, y, pix_size, pix_size), width = 2) # bounding box of detected
+    # for (fx, fy) in (obs[0:env.n_panels*2]):
+    #     u, v = env.telescope._fp_to_uv(fx, fy)
+    #     x, y = u * pix_size + (buffer + pix_size * img_size + buffer), v * pix_size + buffer
+    #     pygame.draw.rect(screen, (255, 255, 255), (x, y, pix_size, pix_size), width = 2) # bounding box of detected
     
 
     text = "Arrow Keys to move selected centroid"
@@ -118,9 +124,8 @@ def input_loop(keys, mouse, mouse_pos):
     if inputCount > 0 and ((horz != 0) != (vert != 0)):
         action = np.asarray([horz, vert],dtype=np.float32)
         observation, reward, terminated, _, det_dict = env.step(action)
-        obs = observation[0]
+        obs = observation
         rew = reward
-        print(reward)
     
     if keys[pygame.K_r]:
         env.reset()

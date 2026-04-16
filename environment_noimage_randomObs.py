@@ -19,18 +19,16 @@ from image_analyzer import image_analyzer
     images.
 """
 class pSCT_environment(gym.Env):
-
     def __init__(self,
-                 n_panels = 10,
-                 memory_time = 1, # how many steps backward in time the agent can see
-                 panel_switch_time = 10
+                 n_panels = 1,
+                 memory_time = 3, # this is how far in the past the agent can see. it also acts as the time between panel switches
                  ):
         
         # bookkeeping
         self.step_count = 0
-        # self.max_steps = 512 # the maximum amount of time the agent is allowed to move for
+        self.max_steps = 256 # the maximum amount of time the agent is allowed to move for
         # self.max_steps = 1024 # the maximum amount of time the agent is allowed to move for
-        self.max_steps = n_panels * panel_switch_time # the agent only gets to move a panel at a time. once it's done moving that panel, it better be aligned.
+        # self.max_steps = n_panels * panel_switch_time # the agent only gets to move a panel at a time. once it's done moving that panel, it better be aligned.
         self.prev_cost = 0
         
         # panels
@@ -40,8 +38,7 @@ class pSCT_environment(gym.Env):
         # note that action_quant should be odd so that (action_quant - 1) / 2 maps to rotation = 0 (allow the agent to not move a panel)
         self.current_panel = 0
         self.current_panel_time = 0 # how many times has the current panel been moved since we switched panels
-        self.panel_switch_time = panel_switch_time # every panel_switch_time amount of frames, switch which panel we're controlling
-
+        
         # the pSCT telescope
         self.telescope = pSCT(n_panels=self.n_panels)
 
@@ -57,7 +54,7 @@ class pSCT_environment(gym.Env):
         self.observation_space = spaces.Box(
             low=-1,
             high=1,
-            shape=(self.n_panels * 2 * self.memory_time + self.memory_time,), # +self.memory_time because we give the agent which panel it's about to control at each time step
+            shape=(self.n_panels * 2 * self.memory_time,),
             dtype=np.float32,
         )
 
@@ -95,25 +92,30 @@ class pSCT_environment(gym.Env):
             self.telescope.rotate_panel(self.P1s[self.current_panel], -rotation_x, -rotation_y)
         
         # update panel control
-        if self.current_panel_time >= self.panel_switch_time - 1:
-            self.current_panel = (self.current_panel + 1) % self.n_panels
-        self.current_panel_time = (self.current_panel_time + 1) % self.panel_switch_time
+        self.current_panel_time = self.current_panel_time + 1
+        if self.current_panel_time >= self.memory_time:
+            self.current_panel = (self.current_panel + 1) % self.n_panels # go to next panel
+            self.current_panel_time = 0 # reset panel time
 
         # update memory - give the new observation to the memory. see self.observation_space to see why we do this
-        single_step_obs = self.telescope.get_normalized_centroid_fp_coords_on_screen().reshape(-1)
-        single_step_obs = np.append(single_step_obs, self.current_panel) # make sure panel is updated BEFORE this line call. we want the environment to tell the agent which panel it's ABOUT to control
-        self.increment_memory(single_step_obs)
+        single_step_obs = self.telescope.get_normalized_centroid_fp_coords_on_screen()
+        # randomize the memory and flatten
+        single_step_obs = self.reorder(single_step_obs).reshape(-1)
+        if self.current_panel_time == 0: # now if we just switched panels, reset the observation. see other documentation
+            self.memory[:] = single_step_obs # set all moments in time to  be the current observation
+        else:
+            self.increment_memory(single_step_obs)
 
         # get the cost from this state
         cost = self.cost_from_detected_centroids(self.telescope.true_centroids) * 1.2 # 0 good, 1 bad
         
         # normal shaping
-        # reward = -cost
+        reward = -cost
 
         # improvement shaping
-        improve = self.prev_cost - cost
-        reward = improve * 10.0 * self.n_panels
-        self.prev_cost = cost
+        # improve = self.prev_cost - cost
+        # reward = improve * 10.0 * self.n_panels
+        # self.prev_cost = cost
 
         terminated = False
         if self.telescope.all_centroids_at_center(success_radius=15): # success
@@ -125,7 +127,7 @@ class pSCT_environment(gym.Env):
         self.step_count += 1
         info = {}
 
-        return self.memory.flatten(order='F'), reward, terminated, truncated, info
+        return self.memory.flatten(order='C'), reward, terminated, truncated, info
 
     """
         Resets the environment to an initial internal state, returning an initial observation and info.
@@ -137,17 +139,17 @@ class pSCT_environment(gym.Env):
         self.telescope.set_random_rotations()
 
         # set up the observation
-        self.memory = np.zeros((self.memory_time, 2*self.n_panels + 1), dtype=np.float32) # +1 because... see self.obs_space
-        single_step_obs = self.telescope.get_normalized_centroid_fp_coords_on_screen().reshape(-1) # get flattened normalized true centroid locations
-        single_step_obs = np.append(single_step_obs, self.current_panel) # make sure panel is updated BEFORE this line call. we want the environment to tell the agent which panel it's ABOUT to control
+        self.memory = np.zeros((self.memory_time, 2*self.n_panels), dtype=np.float32)
+        single_step_obs = self.telescope.get_normalized_centroid_fp_coords_on_screen()
+        single_step_obs = self.reorder(single_step_obs).reshape(-1)
         self.memory[:] = single_step_obs
 
-        # set up reward shaping
+        # set up reward shaping. maybe not necessary
         self.prev_cost = self.cost_from_detected_centroids(self.telescope.true_centroids)
 
         self.current_panel = 0
 
-        return self.memory.flatten(order='F'), {}
+        return self.memory.flatten(order='C'), {}
     
     # ============================== Helper Functions ==============================
 
@@ -182,3 +184,10 @@ class pSCT_environment(gym.Env):
         telescope_center_fp = self.telescope.center
         max_fp_distance = np.sqrt((x_max_fp - telescope_center_fp[0])**2 + (y_max_fp - telescope_center_fp[1])**2)
         return distance / max_fp_distance
+    
+    """
+        Randomly re-orders the points in the list of centroid coordinates
+    """
+    def reorder(self, single_step_observation):
+        np.random.shuffle(single_step_observation)
+        return single_step_observation
